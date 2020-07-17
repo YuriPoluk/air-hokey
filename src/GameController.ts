@@ -16,7 +16,7 @@ export default class GameController {
 
         this.app = new PIXI.Application({
             transparent: false,
-            backgroundColor : 0x000000,
+            backgroundColor : 0xf0f0f0,
             view: parent || document.body,
             antialias: true
         });
