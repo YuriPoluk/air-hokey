@@ -1,0 +1,59 @@
+{
+  "name": "pixi_boilerplate",
+  "version": "1.0.0",
+  "description": "simple boilerplate for 2d games using pixi.js, typescript and webpack",
+  "main": "src/js/main.js",
+  "keywords": [
+    "pixi.js",
+    "webpack"
+  ],
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack --mode development",
+    "build": "cross-env NODE_ENV=production webpack --mode production",
+    "start": "cross-env NODE_ENV=development webpack-dev-server --mode development --open",
+    "lint": "eslint . --ext .ts"
+  },
+  "browserslist": [
+    "> 0.25%, not dead"
+  ],
+  "author": "UrQo",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/preset-typescript": "^7.10.4",
+    "@types/fontfaceobserver": "0.0.6",
+    "cross-env": "^7.0.2",
+    "fontfaceobserver": "^2.1.0",
+    "pixi.js": "^5.2.4",
+    "terser-webpack-plugin": "^3.0.6",
+    "typescript": "^3.9.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.10.2",
+    "@babel/plugin-proposal-class-properties": "^7.10.1",
+    "@babel/polyfill": "^7.10.1",
+    "@babel/preset-env": "^7.10.2",
+    "@typescript-eslint/eslint-plugin": "^3.6.0",
+    "@typescript-eslint/parser": "^3.6.0",
+    "babel-loader": "^8.1.0",
+    "clean-webpack-plugin": "^3.0.0",
+    "copy-webpack-plugin": "^6.0.1",
+    "css-loader": "^3.5.3",
+    "eslint": "^7.4.0",
+    "file-loader": "^6.0.0",
+    "gulp": "^4.0.2",
+    "gulp-clean": "^0.4.0",
+    "gulp-cli": "^2.2.1",
+    "gulp-each": "^0.5.0",
+    "gulp-free-tex-packer": "^0.5.1",
+    "gulp-rename": "^2.0.0",
+    "html-webpack-plugin": "^4.3.0",
+    "imagemin-webpack-plugin": "^2.4.2",
+    "merge-stream": "^2.0.0",
+    "mini-css-extract-plugin": "^0.9.0",
+    "style-loader": "^1.2.1",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.11.0",
+    "webpack-merge": "^4.2.2"
+  }
+}
