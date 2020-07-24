@@ -40,7 +40,7 @@ const babelOptions = (preset) => {
 module.exports = {
     context: path.resolve(__dirname, 'src'),
     mode: 'development',
-    entry: ['./indexTest.ts'],
+    entry: ['./index.ts'],
     resolve: {
         extensions: [ '.tsx', '.ts', '.js' ],
     },

@@ -26,7 +26,7 @@ export default class MainGame extends GameScene  {
         const h = LayoutManager.gameHeight;
         console.log(w, h)
 
-        this.gameField.position.set(- this.gameField.fieldWidth/2, - this.gameField.fieldHeight/2);
+        this.gameField.position.set(- this.gameField.WIDTH/2, - this.gameField.HEIGHT/2);
 
         if(LayoutManager.orientation == Orientation.LANDSCAPE) {
 
