@@ -7,8 +7,8 @@ import GameField from './GameField';
 
 export default class MainGame extends GameScene  {
     background!: PIXI.Sprite;
-
     gameField!: GameField;
+    interactive = false;
 
     constructor() {
         super();
@@ -24,16 +24,19 @@ export default class MainGame extends GameScene  {
     onResize(): void {
         const w = LayoutManager.gameWidth;
         const h = LayoutManager.gameHeight;
-        console.log(w, h)
+        const ratio = w/h;
 
-        this.gameField.position.set(- this.gameField.WIDTH/2, - this.gameField.HEIGHT/2);
+        console.log(ratio, this.gameField.FIELD_RATIO);
 
-        if(LayoutManager.orientation == Orientation.LANDSCAPE) {
-
+        if(ratio <= this.gameField.FIELD_RATIO) {
+            this.gameField.scale.set((w*0.95) / this.gameField.FIELD_WIDTH);
         }
         else {
-
+            this.gameField.scale.set((h*0.95) / this.gameField.FIELD_HEIGHT);
         }
+
+        this.gameField.position.set(0, 0);
+
     }
 
     tick(delta: number): void {

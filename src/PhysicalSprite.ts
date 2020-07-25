@@ -9,6 +9,6 @@ export default class PhysicalSprite {
 
     update() {
         this.view.position.set(this.body.position.x, this.body.position.y);
+        this.view.rotation = this.body.angle;
     }
-
 }
