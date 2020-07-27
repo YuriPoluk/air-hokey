@@ -1,5 +1,5 @@
 import Sprite from "./libs/Sprite";
-import {Bodies, Body, Engine, World, Mouse, MouseConstraint, Constraint} from "matter-js";
+import {Bodies, Body, Engine, World, Constraint} from "matter-js";
 import GameController from "./GameController";
 import PhysicalSprite from './PhysicalSprite';
 
@@ -60,11 +60,11 @@ export default class GameField extends PIXI.Container {
     onPointerMove(e: PIXI.interaction.InteractionEvent) {
         if(!this.pointerDowned) return
         let localPos =  e.data.getLocalPosition(this);
-        if(localPos.x < 20) localPos.x = 20;
-        if(localPos.x > this.WIDTH - 20) localPos.x = this.WIDTH - 20;
+        if(localPos.x < this.CONSTRAINT_WIDTH + this.PLAYER_WIDTH/2) localPos.x = this.CONSTRAINT_WIDTH + this.PLAYER_WIDTH/2;
+        if(localPos.x > this.WIDTH - this.CONSTRAINT_WIDTH - this.PLAYER_WIDTH/2) localPos.x = this.WIDTH - this.CONSTRAINT_WIDTH - this.PLAYER_WIDTH/2;
         if(localPos.y < this.CONSTRAINT_WIDTH + this.FIELD_HEIGHT/2 + this.PLAYER_WIDTH/2)
             localPos.y = this.CONSTRAINT_WIDTH + this.FIELD_HEIGHT/2 + this.PLAYER_WIDTH/2;
-        if(localPos.y > this.HEIGHT - 20) localPos.x = this.HEIGHT - 20;
+        if(localPos.y > this.HEIGHT - this.CONSTRAINT_WIDTH - this.PLAYER_WIDTH/2) localPos.y = this.HEIGHT - this.CONSTRAINT_WIDTH - this.PLAYER_WIDTH/2;
 
         if(this.mouseConstraint) {
             World.remove(this.engine.world, this.mouseConstraint);
@@ -83,11 +83,10 @@ export default class GameField extends PIXI.Container {
 
     onPointerUp(e: PIXI.interaction.InteractionEvent) {
         this.pointerDowned = false;
-
     }
 
     init() {
-        this.background = this.addChild(new Sprite('background'));
+        this.background = this.addChild(this.getRectangleSprite(2, 2, 0xf5f5f5));
         this.background.width = this.WIDTH;
         this.background.height = this.HEIGHT;
         this.background.position.set(this.WIDTH/2, this.HEIGHT/2);
@@ -118,19 +117,19 @@ export default class GameField extends PIXI.Container {
         //strikers and puck
         const player1View = this.addChild(new Sprite('blue'));
         player1View.width = player1View.height = this.PLAYER_WIDTH;
-        const player1Body = Bodies.circle(this.WIDTH/2, this.HEIGHT - this.CONSTRAINT_WIDTH - 20, this.PLAYER_WIDTH/2);
+        const player1Body = Bodies.circle(300, 300, this.PLAYER_WIDTH/2);
         player1Body.restitution = 0.5;
         this.player1 = new PhysicalSprite(player1View, player1Body);
 
         const player2View = this.addChild(new Sprite('red'));
         player2View.width = player2View.height = this.PLAYER_WIDTH;
-        const player2Body = Bodies.circle(this.WIDTH/2, this.CONSTRAINT_WIDTH + 20, this.PLAYER_WIDTH/2);
+        const player2Body = Bodies.circle(200, 200, this.PLAYER_WIDTH/2);
         player2Body.restitution = 0.5;
         this.player2 = new PhysicalSprite(player2View, player2Body);
 
         const puckView = this.addChild(new Sprite('black'));
         puckView.width = puckView.height = this.PUCK_WIDTH;
-        const puckBody = Bodies.circle(this.WIDTH/2, this.HEIGHT/2, this.PUCK_WIDTH/2);
+        const puckBody = Bodies.circle(100, 100, this.PUCK_WIDTH/2);
         puckBody.restitution = 0.5;
         this.puck = new PhysicalSprite(puckView, puckBody);
 
@@ -143,6 +142,7 @@ export default class GameField extends PIXI.Container {
                                             player1Body,
                                             player2Body,
                                             puckBody]);
+        this.resetField();
         this.bodies.push(this.leftConstraint,
                          this.rightConstraint,
                          this.topLeftConstraint,
@@ -152,6 +152,16 @@ export default class GameField extends PIXI.Container {
                          this.player1,
                          this.player2,
                          this.puck);
+
+
+    }
+
+    resetField() {
+        this.resetSpeed([this.player1.body, this.player2.body, this.puck.body])
+
+        Body.setPosition(this.player1.body, { x: this.WIDTH/2, y: this.HEIGHT/2 + this.FIELD_HEIGHT*0.35 });
+        Body.setPosition(this.player2.body, { x: this.WIDTH/2, y: this.HEIGHT/2 - this.FIELD_HEIGHT*0.35 });
+        Body.setPosition(this.puck.body, { x: this.WIDTH/2, y: this.HEIGHT/2 });
     }
 
     clampMaxVelocity(obj: Body) {
@@ -159,6 +169,16 @@ export default class GameField extends PIXI.Container {
             const velocityAngle = Math.atan(obj.velocity.y / obj.velocity.x);
             obj.velocity.x = this.MAX_VELOCITY * Math.cos(velocityAngle);
             obj.velocity.y = this.MAX_VELOCITY * Math.sin(velocityAngle);
+        }
+    }
+
+    resetSpeed(body: Body | Body[]) {
+        let objs: Body[] = []
+        Array.isArray(body) ? objs = body : objs = [body];
+
+        for(let obj of objs) {
+            Body.setVelocity(obj, {x: 0, y: 0});
+            obj.angularVelocity = 0;
         }
     }
 
@@ -172,6 +192,28 @@ export default class GameField extends PIXI.Container {
         return new Sprite(this.gameController.app.renderer.generateTexture(rectangle));
     }
 
+    checkGoal() {
+        let isGoal = false;
+
+        if(this.puck.body.position.y > this.HEIGHT/2 + this.FIELD_HEIGHT/2 + 5) {
+            this.emit('GOAL', '1');
+            isGoal = true;
+        }
+        else if(this.puck.body.position.y < this.CONSTRAINT_WIDTH - 5) {
+            this.emit('GOAL', '2');
+            isGoal = true;
+        }
+
+        if(isGoal) {
+            this.pointerDowned = false;
+            if(this.mouseConstraint) {
+                World.remove(this.engine.world, this.mouseConstraint);
+            }
+            this.resetField();
+            Body.setPosition(this.puck.body, {x:this.WIDTH/2, y: this.HEIGHT/2 - this.FIELD_HEIGHT*0.15})
+        }
+    }
+
     tick(delta: number): void {
         const correction = this.LAST_DELTA ? delta / this.LAST_DELTA : 1;
         Engine.update(this.engine, delta, correction);
@@ -182,6 +224,8 @@ export default class GameField extends PIXI.Container {
 
         this.clampMaxVelocity(this.puck.body);
         this.clampMaxVelocity(this.player1.body);
+
+        this.checkGoal();
 
         this.LAST_DELTA = delta;
     }
