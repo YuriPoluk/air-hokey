@@ -1,6 +1,4 @@
-import {Bodies, Body, Engine, World, Render, Composite, Mouse, MouseConstraint} from "matter-js";
-import Sprite from "./libs/Sprite";
-import PhysicalSprite from "./PhysicalSprite";
+import {Bodies, Body, Engine, World, Render, Mouse, MouseConstraint} from "matter-js";
 
 
 const FIELD_WIDTH = 250;
@@ -52,18 +50,18 @@ engine.world.gravity.y = 0;
 Body.applyForce(playBall, {x: 0, y: 0}, {x: 0.025, y: 0.025});
 
 // add mouse control
-var mouse = Mouse.create(render.canvas),
-    mouseConstraint = MouseConstraint.create(engine, {
-        mouse: mouse,
-        constraint: {
-            stiffness: 0.2,
-            render: {
-                visible: true
-            }
-        }
-    });
+// var mouse = Mouse.create(render.canvas),
+//     mouseConstraint = MouseConstraint.create(engine, {
+//         mouse: mouse,
+//         constraint: {
+//             stiffness: 0.2,
+//             render: {
+//                 visible: true
+//             }
+//         }
+//     });
 
-World.add(engine.world, mouseConstraint);
-
-Engine.run(engine);
-Render.run(render);
+// World.add(engine.world, mouseConstraint);
+//
+// Engine.run(engine);
+// Render.run(render);

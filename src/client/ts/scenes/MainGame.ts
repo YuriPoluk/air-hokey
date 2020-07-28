@@ -1,8 +1,7 @@
-import Sprite from './libs/Sprite'
-import {LayoutManager, Orientation} from './libs/LayoutManager';
-import GameScene from "./GameScene";
-import {Engine, World, Bodies, Body} from 'matter-js';
-import GameField from './GameField';
+import Sprite from '../libs/Sprite'
+import { LayoutManager } from '../libs/LayoutManager';
+import GameScene from "../core/GameScene";
+import GameField from '../elements/GameField';
 
 
 export default class MainGame extends GameScene  {

@@ -1,4 +1,4 @@
-import { ASSETS_CONFIG } from '../ASSETS_CONFIG'
+import { ASSETS_CONFIG } from '../configs/ASSETS_CONFIG'
 import FontFaceObserver from 'fontfaceobserver'
 import * as PIXI from 'pixi.js';
 
@@ -46,7 +46,7 @@ export default class AssetsPreloader {
     loadFonts(): void {
         const observer: Array<Promise<void>> = [];
         const styles = document?.styleSheets[0] as CSSStyleSheet;
-        ASSETS_CONFIG.fonts?.forEach(font => {
+        ASSETS_CONFIG.fonts?.forEach((font: any) => {
             const name = font.split(".")[0];
             const url = "../assets/fonts/" + font;
             styles.insertRule(`@font-face {font-family: "${name}"; src: url("${url}");}`);

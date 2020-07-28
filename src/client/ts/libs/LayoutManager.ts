@@ -1,5 +1,5 @@
-import CONFIG from '../Config';
-import GameController from '../GameController';
+import CONFIG from '../configs/Config';
+import GameController from '../core/GameController';
 
 export enum Orientation { PORTRAIT, LANDSCAPE}
 

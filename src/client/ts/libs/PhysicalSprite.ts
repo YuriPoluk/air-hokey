@@ -1,4 +1,4 @@
-import Sprite from './libs/Sprite';
+import Sprite from './Sprite';
 import { Body } from 'matter-js'
 
 export default class PhysicalSprite {

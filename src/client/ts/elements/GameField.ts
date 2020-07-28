@@ -1,7 +1,7 @@
-import Sprite from "./libs/Sprite";
+import Sprite from "../libs/Sprite";
 import {Bodies, Body, Engine, World, Constraint} from "matter-js";
-import GameController from "./GameController";
-import PhysicalSprite from './PhysicalSprite';
+import GameController from "../core/GameController";
+import PhysicalSprite from '../libs/PhysicalSprite';
 
 export default class GameField extends PIXI.Container {
 
@@ -189,6 +189,8 @@ export default class GameField extends PIXI.Container {
         rectangle.drawRect(0, 0, width, height);
         rectangle.endFill();
         rectangle.alpha = 0.35;
+        //@ts-ignore
+        //TODO investigate
         return new Sprite(this.gameController.app.renderer.generateTexture(rectangle));
     }
 

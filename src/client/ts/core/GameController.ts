@@ -1,7 +1,7 @@
-import MainGame from './MainGame'
-import AssetsPreloader from './libs/AssetsPreloader';
+import MainGame from '../scenes/MainGame'
+import AssetsPreloader from '../libs/AssetsPreloader';
 import GameScene from "./GameScene";
-import {LayoutManager} from "./libs/LayoutManager";
+import {LayoutManager} from "../libs/LayoutManager";
 
 export default class GameController {
     private static instance: GameController;

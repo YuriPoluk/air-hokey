@@ -38,15 +38,15 @@ const babelOptions = (preset) => {
 }
 
 module.exports = {
-    context: path.resolve(__dirname, 'src'),
+    context: path.resolve(__dirname, 'src/client'),
     mode: 'development',
-    entry: ['./index.ts'],
+    entry: ['./ts/index.ts'],
     resolve: {
         extensions: [ '.tsx', '.ts', '.js' ],
     },
     output: {
         filename: filename('js'),
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'dist/client'),
     },
     optimization: optimization(),
     devServer: {
@@ -65,8 +65,8 @@ module.exports = {
         new CopyWebpackPlugin({
             patterns: [
                 {
-                    from: path.resolve(__dirname, 'src/assets'),
-                    to: path.resolve(__dirname, 'dist/assets')
+                    from: path.resolve(__dirname, 'src/client/assets'),
+                    to: path.resolve(__dirname, 'dist/client/assets')
                 }
             ]
         }),
@@ -95,9 +95,11 @@ module.exports = {
                 test: /\.ts$/ ,
                 exclude: /node_modules/,
                 loader: {
-                    loader: 'babel-loader',
-                    options: babelOptions('@babel/preset-typescript')
-                }
+                    loader: 'ts-loader',
+                    options: {
+                        configFile: 'tsconfig.webpack.json'
+                    }
+                },
             },
             {
                 test: /\.(woff|woff2|eot|ttf|otf)$/,
