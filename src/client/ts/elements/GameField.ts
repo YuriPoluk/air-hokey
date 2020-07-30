@@ -1,54 +1,48 @@
 import Sprite from "../libs/Sprite";
-import {Bodies, Body, Engine, World, Constraint} from "matter-js";
+import {Body, Constraint, Engine, World} from "matter-js";
 import GameController from "../core/GameController";
-import PhysicalSprite from '../libs/PhysicalSprite';
+import {PlayerRoles} from '../../../shared/PlayerRoles';
+import Constants from "../../../shared/Constants";
+import { playerRole } from '../networking'
+import { getCurrentState } from "../state";
+import { getRectangleSprite } from '../../../shared/Utils'
 
 export default class GameField extends PIXI.Container {
 
-
-    FIELD_WIDTH = 375;
-    FIELD_HEIGHT = 667;
-    FIELD_RATIO = this.FIELD_WIDTH / this.FIELD_HEIGHT;
-    CONSTRAINT_WIDTH = 25;
-    WIDTH = this.FIELD_WIDTH + this.CONSTRAINT_WIDTH*2;
-    HEIGHT = this.FIELD_HEIGHT + this.CONSTRAINT_WIDTH*2;
-    GATE_WIDTH = this.FIELD_WIDTH/2;
-    PLAYER_WIDTH = this.GATE_WIDTH/2;
-    PUCK_WIDTH = this.PLAYER_WIDTH*0.45
-    LAST_DELTA!: number;
-    MAX_VELOCITY = 5;
-    MAX_VELOCITY_SQRD = this.MAX_VELOCITY * this.MAX_VELOCITY;
-
     gameController = GameController.getInstance();
     engine = Engine.create();
-    bodies: PhysicalSprite[] = [];
+    playerInput!: {x: number, y: number};
 
     background!: Sprite;
-    leftConstraint!: PhysicalSprite;
-    rightConstraint!: PhysicalSprite;
-    topLeftConstraint!: PhysicalSprite;
-    topRightConstraint!: PhysicalSprite;
-    bottomLeftConstraint!: PhysicalSprite;
-    bottomRightConstraint!: PhysicalSprite;
-    mouseConstraint!: Constraint;
-    player1!: PhysicalSprite;
-    player2!: PhysicalSprite;
-    puck!: PhysicalSprite;
 
-    hitArea = new PIXI.Rectangle(0, 0, this.WIDTH, this.HEIGHT)
+    player1!: Sprite;
+    player2!: Sprite;
+    currPlayer!: Sprite;
+    puck!: Sprite;
+
+    hitArea = new PIXI.Rectangle(0, 0, Constants.WIDTH, Constants.HEIGHT)
     interactive = true;
 
     pointerDowned = false;
 
-    constructor() {
+    constructor(role: PlayerRoles) {
         super();
-        this.pivot.set(this.WIDTH/2, this.HEIGHT/2);
-        this.engine.world.bounds = {min: {x: 0, y: 0}, max: {x: this.WIDTH, y: this.HEIGHT}};
+        this.pivot.set(Constants.WIDTH/2, Constants.HEIGHT/2);
+        this.engine.world.bounds = { min: { x: 0, y: 0 }, max: { x: Constants.WIDTH, y: Constants.HEIGHT }};
         this.engine.world.gravity.y = 0;
         this.init();
+        this.setRole(role);
+    }
 
-        this.player1.view.interactive = true;
-        this.player1.view.on('pointerdown', this.onPointerDown, this);
+    setRole(role: PlayerRoles) {
+        console.log(role, PlayerRoles.Player1)
+        this.currPlayer = role === PlayerRoles.Player1 ? this.player1 : this.player2;
+        this.currPlayer.interactive = true;
+
+        this.currPlayer.on('pointerdown', this.onPointerDown, this);
+        this.on('pointerdown', (e: PIXI.interaction.InteractionEvent) => {
+            console.log(e.data.getLocalPosition(this))
+        });
         this.on('pointermove', this.onPointerMove, this);
         this.on('pointerup', this.onPointerUp, this);
     }
@@ -58,177 +52,76 @@ export default class GameField extends PIXI.Container {
     }
 
     onPointerMove(e: PIXI.interaction.InteractionEvent) {
-        if(!this.pointerDowned) return
+        if(!this.pointerDowned) return;
         let localPos =  e.data.getLocalPosition(this);
-        if(localPos.x < this.CONSTRAINT_WIDTH + this.PLAYER_WIDTH/2) localPos.x = this.CONSTRAINT_WIDTH + this.PLAYER_WIDTH/2;
-        if(localPos.x > this.WIDTH - this.CONSTRAINT_WIDTH - this.PLAYER_WIDTH/2) localPos.x = this.WIDTH - this.CONSTRAINT_WIDTH - this.PLAYER_WIDTH/2;
-        if(localPos.y < this.CONSTRAINT_WIDTH + this.FIELD_HEIGHT/2 + this.PLAYER_WIDTH/2)
-            localPos.y = this.CONSTRAINT_WIDTH + this.FIELD_HEIGHT/2 + this.PLAYER_WIDTH/2;
-        if(localPos.y > this.HEIGHT - this.CONSTRAINT_WIDTH - this.PLAYER_WIDTH/2) localPos.y = this.HEIGHT - this.CONSTRAINT_WIDTH - this.PLAYER_WIDTH/2;
-
-        if(this.mouseConstraint) {
-            World.remove(this.engine.world, this.mouseConstraint);
+        if(localPos.x < Constants.CONSTRAINT_WIDTH + Constants.PLAYER_WIDTH/2) localPos.x = Constants.CONSTRAINT_WIDTH + Constants.PLAYER_WIDTH/2;
+        if(localPos.x > Constants.WIDTH - Constants.CONSTRAINT_WIDTH - Constants.PLAYER_WIDTH/2) localPos.x = Constants.WIDTH - Constants.CONSTRAINT_WIDTH - Constants.PLAYER_WIDTH/2;
+        if(parseInt(playerRole) == PlayerRoles.Player1) {
+            if(localPos.y < Constants.CONSTRAINT_WIDTH + Constants.FIELD_HEIGHT/2 + Constants.PLAYER_WIDTH/2)
+                localPos.y = Constants.CONSTRAINT_WIDTH + Constants.FIELD_HEIGHT/2 + Constants.PLAYER_WIDTH/2;
+            if(localPos.y > Constants.HEIGHT - Constants.CONSTRAINT_WIDTH - Constants.PLAYER_WIDTH/2) localPos.y = Constants.HEIGHT - Constants.CONSTRAINT_WIDTH - Constants.PLAYER_WIDTH/2;
+        }
+        else {
+            if(localPos.y < Constants.CONSTRAINT_WIDTH + Constants.PLAYER_WIDTH/2)
+                localPos.y = Constants.CONSTRAINT_WIDTH + Constants.PLAYER_WIDTH/2;
+            if(localPos.y > Constants.HEIGHT/2 - Constants.PLAYER_WIDTH/2) localPos.y = Constants.HEIGHT/2 - Constants.PLAYER_WIDTH/2;
         }
 
-        this.mouseConstraint = Constraint.create({
-            pointA: {x: localPos.x, y: localPos.y},
-            bodyB: this.player1.body,
-            pointB: { x: 0, y: 0 },
-            length: 0,
-            stiffness: 0.75,
-        });
-
-        World.add(this.engine.world, this.mouseConstraint);
+        console.log('prevPosOnClient', {x: this.currPlayer.x, y: this.currPlayer.y})
+        console.log({x: localPos.x, y: localPos.y})
+        this.playerInput = {x: localPos.x, y: localPos.y};
     }
 
     onPointerUp(e: PIXI.interaction.InteractionEvent) {
         this.pointerDowned = false;
     }
 
+    updateBodies() {
+        const state = getCurrentState();
+        if(!state.player1) return;
+        this.player1.position.set(state.player1.x, state.player1.y);
+        this.player2.position.set(state.player2.x, state.player2.y);
+        this.puck.position.set(state.puck.x, state.puck.y);
+    }
+
     init() {
-        this.background = this.addChild(this.getRectangleSprite(2, 2, 0xf5f5f5));
-        this.background.width = this.WIDTH;
-        this.background.height = this.HEIGHT;
-        this.background.position.set(this.WIDTH/2, this.HEIGHT/2);
+        this.background = this.addChild(getRectangleSprite(2, 2, this.gameController, 0xf5f5f5));
+        this.background.width = Constants.WIDTH;
+        this.background.height = Constants.HEIGHT;
+        this.background.position.set(Constants.WIDTH/2, Constants.HEIGHT/2);
 
         //field bounds
-        const leftConstraint = Bodies.rectangle(this.CONSTRAINT_WIDTH/2, this.FIELD_HEIGHT/2 + this.CONSTRAINT_WIDTH, this.CONSTRAINT_WIDTH, this.FIELD_HEIGHT, { isStatic: true });
-        let view = this.addChild(this.getRectangleSprite(this.CONSTRAINT_WIDTH, this.FIELD_HEIGHT));
-        this.leftConstraint = new PhysicalSprite(view, leftConstraint);
-
-        const rightConstraint = Bodies.rectangle(this.WIDTH - this.CONSTRAINT_WIDTH/2, this.FIELD_HEIGHT/2 + this.CONSTRAINT_WIDTH, this.CONSTRAINT_WIDTH, this.FIELD_HEIGHT, { isStatic: true });
-        view = this.addChild(this.getRectangleSprite(this.CONSTRAINT_WIDTH, this.FIELD_HEIGHT));
-        this.rightConstraint = new PhysicalSprite(view, rightConstraint);
-
-        const topLeftConstraint = Bodies.rectangle((this.WIDTH - this.GATE_WIDTH)/4, this.CONSTRAINT_WIDTH/2, this.WIDTH/2 - this.GATE_WIDTH/2, this.CONSTRAINT_WIDTH, { isStatic: true });
-        view = this.addChild(this.getRectangleSprite(this.WIDTH/2 - this.GATE_WIDTH/2, this.CONSTRAINT_WIDTH));
-        this.topLeftConstraint = new PhysicalSprite(view, topLeftConstraint);
-        const topRightConstraint = Bodies.rectangle(this.WIDTH - (this.WIDTH - this.GATE_WIDTH)/4, this.CONSTRAINT_WIDTH/2, this.WIDTH/2 - this.GATE_WIDTH/2, this.CONSTRAINT_WIDTH, { isStatic: true });
-        view = this.addChild(this.getRectangleSprite(this.WIDTH/2 - this.GATE_WIDTH/2, this.CONSTRAINT_WIDTH));
-        this.topRightConstraint = new PhysicalSprite(view, topRightConstraint);
-
-        const bottomLeftConstraint = Bodies.rectangle((this.WIDTH - this.GATE_WIDTH)/4, this.HEIGHT - this.CONSTRAINT_WIDTH/2, this.WIDTH/2 - this.GATE_WIDTH/2, this.CONSTRAINT_WIDTH, { isStatic: true });
-        view = this.addChild(this.getRectangleSprite(this.WIDTH/2 - this.GATE_WIDTH/2, this.CONSTRAINT_WIDTH));
-        this.bottomLeftConstraint = new PhysicalSprite(view, bottomLeftConstraint);
-        const bottomRightConstraint = Bodies.rectangle(this.WIDTH - (this.WIDTH - this.GATE_WIDTH)/4, this.HEIGHT - this.CONSTRAINT_WIDTH/2, this.WIDTH/2 - this.GATE_WIDTH/2, this.CONSTRAINT_WIDTH, { isStatic: true });
-        view = this.addChild(this.getRectangleSprite(this.WIDTH/2 - this.GATE_WIDTH/2, this.CONSTRAINT_WIDTH));
-        this.bottomRightConstraint = new PhysicalSprite(view, bottomRightConstraint);
+        let leftConstraint = this.addChild(getRectangleSprite(Constants.CONSTRAINT_WIDTH, Constants.FIELD_HEIGHT, this.gameController));
+        leftConstraint.position.set(Constants.CONSTRAINT_WIDTH / 2, Constants.FIELD_HEIGHT / 2 + Constants.CONSTRAINT_WIDTH);
+        let rightConstraint = this.addChild(getRectangleSprite(Constants.CONSTRAINT_WIDTH, Constants.FIELD_HEIGHT, this.gameController));
+        rightConstraint.position.set(Constants.WIDTH - Constants.CONSTRAINT_WIDTH / 2, Constants.FIELD_HEIGHT / 2 + Constants.CONSTRAINT_WIDTH);
+        let topLeftConstraint = this.addChild(getRectangleSprite(Constants.WIDTH/2 - Constants.GATE_WIDTH/2, Constants.CONSTRAINT_WIDTH, this.gameController));
+        topLeftConstraint.position.set((Constants.WIDTH - Constants.GATE_WIDTH) / 4, Constants.CONSTRAINT_WIDTH / 2);
+        let topRightConstraint = this.addChild(getRectangleSprite(Constants.WIDTH/2 - Constants.GATE_WIDTH/2, Constants.CONSTRAINT_WIDTH, this.gameController));
+        topRightConstraint.position.set(Constants.WIDTH - (Constants.WIDTH - Constants.GATE_WIDTH) / 4, Constants.CONSTRAINT_WIDTH / 2);
+        let bottomLeftConstraint = this.addChild(getRectangleSprite(Constants.WIDTH/2 - Constants.GATE_WIDTH/2, Constants.CONSTRAINT_WIDTH, this.gameController));
+        bottomLeftConstraint.position.set((Constants.WIDTH - Constants.GATE_WIDTH) / 4, Constants.HEIGHT - Constants.CONSTRAINT_WIDTH / 2);
+        let bottomRightConstraint = this.addChild(getRectangleSprite(Constants.WIDTH/2 - Constants.GATE_WIDTH/2, Constants.CONSTRAINT_WIDTH, this.gameController));
+        bottomRightConstraint.position.set(Constants.WIDTH - (Constants.WIDTH - Constants.GATE_WIDTH) / 4, Constants.HEIGHT - Constants.CONSTRAINT_WIDTH / 2);
 
         //strikers and puck
-        const player1View = this.addChild(new Sprite('blue'));
-        player1View.width = player1View.height = this.PLAYER_WIDTH;
-        const player1Body = Bodies.circle(300, 300, this.PLAYER_WIDTH/2);
-        player1Body.restitution = 0.5;
-        this.player1 = new PhysicalSprite(player1View, player1Body);
+        this.player1 = this.addChild(new Sprite('blue'));
+        this.player1.width = this.player1.height = Constants.PLAYER_WIDTH;
+        this.player1.position.set(Constants.WIDTH/2, Constants.HEIGHT/2 + Constants.FIELD_HEIGHT/4)
 
-        const player2View = this.addChild(new Sprite('red'));
-        player2View.width = player2View.height = this.PLAYER_WIDTH;
-        const player2Body = Bodies.circle(200, 200, this.PLAYER_WIDTH/2);
-        player2Body.restitution = 0.5;
-        this.player2 = new PhysicalSprite(player2View, player2Body);
-
-        const puckView = this.addChild(new Sprite('black'));
-        puckView.width = puckView.height = this.PUCK_WIDTH;
-        const puckBody = Bodies.circle(100, 100, this.PUCK_WIDTH/2);
-        puckBody.restitution = 0.5;
-        this.puck = new PhysicalSprite(puckView, puckBody);
-
-        World.add(this.engine.world, [leftConstraint,
-                                            rightConstraint,
-                                            topLeftConstraint,
-                                            topRightConstraint,
-                                            bottomLeftConstraint,
-                                            bottomRightConstraint,
-                                            player1Body,
-                                            player2Body,
-                                            puckBody]);
-        this.resetField();
-        this.bodies.push(this.leftConstraint,
-                         this.rightConstraint,
-                         this.topLeftConstraint,
-                         this.topRightConstraint,
-                         this.bottomLeftConstraint,
-                         this.bottomRightConstraint,
-                         this.player1,
-                         this.player2,
-                         this.puck);
+        this.player2 = this.addChild(new Sprite('red'));
+        this.player2.width = this.player2.height = Constants.PLAYER_WIDTH;
+        this.player2.position.set(Constants.WIDTH/2, Constants.HEIGHT/2 - Constants.FIELD_HEIGHT/4)
 
 
+        this.puck = this.addChild(new Sprite('black'));
+        this.puck.width = this.puck.height = Constants.PUCK_WIDTH;
+        this.puck.position.set(Constants.WIDTH/2, Constants.HEIGHT/2);
     }
 
-    resetField() {
-        this.resetSpeed([this.player1.body, this.player2.body, this.puck.body])
-
-        Body.setPosition(this.player1.body, { x: this.WIDTH/2, y: this.HEIGHT/2 + this.FIELD_HEIGHT*0.35 });
-        Body.setPosition(this.player2.body, { x: this.WIDTH/2, y: this.HEIGHT/2 - this.FIELD_HEIGHT*0.35 });
-        Body.setPosition(this.puck.body, { x: this.WIDTH/2, y: this.HEIGHT/2 });
-    }
-
-    clampMaxVelocity(obj: Body) {
-        if(obj.velocity.x*obj.velocity.x + obj.velocity.y*obj.velocity.y > this.MAX_VELOCITY_SQRD) {
-            const velocityAngle = Math.atan(obj.velocity.y / obj.velocity.x);
-            obj.velocity.x = this.MAX_VELOCITY * Math.cos(velocityAngle);
-            obj.velocity.y = this.MAX_VELOCITY * Math.sin(velocityAngle);
-        }
-    }
-
-    resetSpeed(body: Body | Body[]) {
-        let objs: Body[] = []
-        Array.isArray(body) ? objs = body : objs = [body];
-
-        for(let obj of objs) {
-            Body.setVelocity(obj, {x: 0, y: 0});
-            obj.angularVelocity = 0;
-        }
-    }
-
-    getRectangleSprite(width: number, height: number, color?: number): Sprite {
-        const rectangle = new PIXI.Graphics();
-        color = color || 0xff0000;
-        rectangle.beginFill(color);
-        rectangle.drawRect(0, 0, width, height);
-        rectangle.endFill();
-        rectangle.alpha = 0.35;
-        //@ts-ignore
-        //TODO investigate
-        return new Sprite(this.gameController.app.renderer.generateTexture(rectangle));
-    }
-
-    checkGoal() {
-        let isGoal = false;
-
-        if(this.puck.body.position.y > this.HEIGHT/2 + this.FIELD_HEIGHT/2 + 5) {
-            this.emit('GOAL', '1');
-            isGoal = true;
-        }
-        else if(this.puck.body.position.y < this.CONSTRAINT_WIDTH - 5) {
-            this.emit('GOAL', '2');
-            isGoal = true;
-        }
-
-        if(isGoal) {
-            this.pointerDowned = false;
-            if(this.mouseConstraint) {
-                World.remove(this.engine.world, this.mouseConstraint);
-            }
-            this.resetField();
-            Body.setPosition(this.puck.body, {x:this.WIDTH/2, y: this.HEIGHT/2 - this.FIELD_HEIGHT*0.15})
-        }
-    }
-
-    tick(delta: number): void {
-        const correction = this.LAST_DELTA ? delta / this.LAST_DELTA : 1;
-        Engine.update(this.engine, delta, correction);
-
-        for(const body of this.bodies) {
-            body.update();
-        }
-
-        this.clampMaxVelocity(this.puck.body);
-        this.clampMaxVelocity(this.player1.body);
-
-        this.checkGoal();
-
-        this.LAST_DELTA = delta;
+    tick(): void {
+        if(this.playerInput)
+            this.gameController.socket.emit(Constants.SOCKET_PLAYER_ACTION, this.playerInput);
+        this.updateBodies();
     }
 }

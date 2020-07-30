@@ -24,9 +24,33 @@
         "y": 0.5
       }
     },
-    "pause_icon": {
+    "play": {
       "frame": {
         "x": 2,
+        "y": 1357,
+        "w": 860,
+        "h": 688
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 860,
+        "h": 688
+      },
+      "sourceSize": {
+        "w": 860,
+        "h": 688
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "pause_icon": {
+      "frame": {
+        "x": 866,
         "y": 1357,
         "w": 256,
         "h": 384
@@ -50,7 +74,7 @@
     },
     "black": {
       "frame": {
-        "x": 2,
+        "x": 866,
         "y": 1745,
         "w": 255,
         "h": 255
@@ -80,7 +104,7 @@
     "format": "RGBA8888",
     "size": {
       "w": 1355,
-      "h": 2002
+      "h": 2047
     },
     "scale": 1
   }

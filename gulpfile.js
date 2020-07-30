@@ -6,12 +6,12 @@ const texturePacker = require('gulp-free-tex-packer');
 const rename = require('gulp-rename');
 
 function cleanAssetsFolder() {
-    return src('src/assets/*', {read: false})
+    return src('src/client/assets/*', {read: false})
                .pipe(clean());
 }
 
 function packAtlases() {
-    return src('src/assets_raw/atlases/*')
+    return src('src/client/assets_raw/atlases/*')
             .pipe(texturePacker({
                 textureName: "my-texture",
                 width: 2048,
@@ -25,46 +25,46 @@ function packAtlases() {
                 removeFileExtension: true,
                 prependFolderName: true
             }))
-            .pipe(dest('src/assets/atlases'));
+            .pipe(dest('src/client/assets/atlases'));
 }
 
 function packImages(done) {
-    return src(path.join('src/assets_raw/images', '/**/*'))
+    return src(path.join('src/client/assets_raw/images', '/**/*'))
             .pipe(rename({dirname: ''}))
-            .pipe(dest('src/assets/images'));
+            .pipe(dest('src/client/assets/images'));
 }
 
 function packSpines(done) {
-    return src(path.join('/src/assets_raw/spines', '/**/*'))
+    return src(path.join('/src/client/assets_raw/spines', '/**/*'))
             .pipe(rename({dirname: ''}))
-            .pipe(dest('src/assets/spines'));
+            .pipe(dest('src/client/assets/spines'));
 }
 
 function packSounds(done) {
-    return src(path.join('/src/assets_raw/sounds', '/**/*'))
+    return src(path.join('/src/client/assets_raw/sounds', '/**/*'))
             .pipe(rename({dirname: ''}))
-            .pipe(dest('src/assets/sounds'));
+            .pipe(dest('src/client/assets/sounds'));
 }
 
 function packFonts(done) {
-    return src(path.join('/src/assets_raw/fonts', '/**/*'))
+    return src(path.join('/src/client/assets_raw/fonts', '/**/*'))
         .pipe(rename({dirname: ''}))
-        .pipe(dest('src/assets/fonts'));
+        .pipe(dest('src/client/assets/fonts'));
 }
 
 function createAssetsList(done) {
     let contents = {};
-    fs.readdirSync('./src/assets').forEach(function(dirName) {
+    fs.readdirSync('./src/client/assets').forEach(function(dirName) {
         if(dirName == 'atlases' || dirName == 'spines') {
             let atlases = '';
-            let contentsOfAtlases = fs.readdirSync('./src/assets/' + dirName).filter( asset => {
+            let contentsOfAtlases = fs.readdirSync('./src/client/assets/' + dirName).filter( asset => {
                 let separated = asset.split('.');
                 return separated[separated.length - 1] == 'json';
             });
             contents[dirName] = contentsOfAtlases;
         }
         else {
-            contents[dirName] = fs.readdirSync('./src/assets/' + dirName);
+            contents[dirName] = fs.readdirSync('./src/client/assets/' + dirName);
         }
     });
     contents = 'export const ASSETS_CONFIG: {[index: string]:any} = ' + JSON.stringify(contents) + ';';

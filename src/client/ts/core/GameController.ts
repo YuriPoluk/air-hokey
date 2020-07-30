@@ -1,15 +1,17 @@
 import MainGame from '../scenes/MainGame'
-import AssetsPreloader from '../libs/AssetsPreloader';
+import {preloadAssets} from '../libs/assetsLoading';
 import GameScene from "./GameScene";
 import {LayoutManager} from "../libs/LayoutManager";
+import {socket, connect} from '../networking';
+import { initState } from "../state";
 
 export default class GameController {
     private static instance: GameController;
-    private preloader: AssetsPreloader;
-    layoutManager!: LayoutManager;
+    layoutManager = new LayoutManager(this);
     app: PIXI.Application;
     size: {w: number, h: number};
     currentWindow!: GameScene;
+    socket: SocketIOClient.Socket = socket;
 
     constructor(parent: HTMLCanvasElement) {
         this.size = {w: 800, h: 600};
@@ -22,20 +24,15 @@ export default class GameController {
         });
 
         this.app.ticker.add(this.tick, this);
-
-        this.preloader = new AssetsPreloader(this.start.bind(this));
-        this.preloader.preload();
         this.initLayoutManager();
 
         //@ts-ignore
         window.GAME = this;
         window.PIXI = PIXI;
 
-        let resizeTimeout: any;
-        window.addEventListener("resize", () => {
-            if(resizeTimeout)
-                clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(this.onResize.bind(this), 100);
+        Promise.all([preloadAssets(), connect()]).then( () => {
+            initState();
+            this.start();
         });
     }
 
@@ -49,7 +46,6 @@ export default class GameController {
     }
 
     initLayoutManager(): void {
-        this.layoutManager = new LayoutManager(this);
         this.layoutManager.fitLayout();
         window.addEventListener("resize", this.onResize.bind(this));
         let resizeTimeout: any;

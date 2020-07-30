@@ -1,34 +1,102 @@
+#!/usr/bin/env node
 "use strict";
+/**
+ * Module dependencies.
+ */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const http_errors_1 = __importDefault(require("http-errors"));
-const express_1 = __importDefault(require("express"));
-const path_1 = __importDefault(require("path"));
-var app = express_1.default();
-app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({ extended: false }));
-// app.use(cookieParser());
-app.use(express_1.default.static(path_1.default.join(__dirname, 'public')));
-app.use(express_1.default.static(path_1.default.join(__dirname, 'dist/client')));
-// catch 404 and forward to error handler
-app.use(function (req, res, next) {
-    next(http_errors_1.default(404));
+const app_1 = __importDefault(require("./app"));
+const http_1 = __importDefault(require("http"));
+const socket_io_1 = __importDefault(require("socket.io"));
+const Field_1 = __importDefault(require("./Field"));
+const Constants_1 = __importDefault(require("../shared/Constants"));
+const PlayerRoles_1 = require("../shared/PlayerRoles");
+/**
+ * Get port from environment and store in Express.
+ */
+const port = normalizePort(process.env.PORT || '3000');
+app_1.default.set('port', port);
+/**
+ * Create HTTP server.
+ */
+const server = http_1.default.createServer(app_1.default);
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+const io = socket_io_1.default(server);
+const field = new Field_1.default(io);
+io.on('connection', socket => {
+    socket.on(Constants_1.default.SOCKET_NEW_PLAYER, () => {
+        if (field.playerSockets.length == 0) {
+            field.addPlayer(socket);
+            socket.emit(Constants_1.default.SOCKET_ROLE_ASSIGN, PlayerRoles_1.PlayerRoles.Player1);
+        }
+        else if (field.playerSockets.length == 1) {
+            field.addPlayer(socket);
+            socket.emit(Constants_1.default.SOCKET_ROLE_ASSIGN, PlayerRoles_1.PlayerRoles.Player2);
+            io.sockets.emit(Constants_1.default.SOCKET_PLAYERS_READY);
+        }
+    });
+    socket.on(Constants_1.default.SOCKET_PLAYER_ACTION, data => {
+        field.updatePlayerOnInput(socket.id, data);
+    });
+    socket.on(Constants_1.default.SOCKET_DISCONNECT, () => {
+        io.sockets.emit(Constants_1.default.SOCKET_PLAYER_LEAVE);
+    });
 });
-
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
-
-// error handler
-app.use(function (err, req, res, next) {
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = req.app.get('env') === 'development' ? err : {};
-    // render the error page
-    res.status(err.status || 500);
-    res.send('error');
-});
-module.exports = app;
+/**
+ * Normalize a port into a number, string, or false.
+ */
+function normalizePort(val) {
+    const port = parseInt(val, 10);
+    if (isNaN(port)) {
+        // named pipe
+        return val;
+    }
+    if (port >= 0) {
+        // port number
+        return port;
+    }
+    return false;
+}
+/**
+ * Event listener for HTTP server "error" event.
+ */
+function onError(error) {
+    if (error.syscall !== 'listen') {
+        throw error;
+    }
+    const bind = typeof port === 'string' ?
+        'Pipe ' + port :
+        'Port ' + port;
+    // handle specific listen errors with friendly messages
+    switch (error.code) {
+        case 'EACCES':
+            console.error(bind + ' requires elevated privileges');
+            process.exit(1);
+            break;
+        case 'EADDRINUSE':
+            console.error(bind + ' is already in use');
+            process.exit(1);
+            break;
+        default:
+            throw error;
+    }
+}
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+function onListening() {
+    const addr = server.address();
+    const bind = typeof addr === 'string' ?
+        'pipe ' + addr :
+        // @ts-ignore
+        'port ' + addr.port;
+    console.log('Listening on ' + bind);
+}
 //# sourceMappingURL=server.js.map

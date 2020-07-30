@@ -1,36 +1,122 @@
-import createError from 'http-errors';
-import express from 'express';
-import path from 'path';
-// import cookieParser from 'cookie-parser';
-import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+#!/usr/bin/env node
+
+import app from './app'
+import http from 'http';
+import socketIO from 'socket.io'
+import { HttpError } from "http-errors";
+import Field from './Field';
+import Constants from '../shared/Constants';
+import { PlayerRoles } from '../shared/PlayerRoles';
+
+const port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+const server = http.createServer(app);
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+const io = socketIO(server);
+let field: Field;
+let playerRoles: PlayerRoles[];
+
+const initGame = () => {
+  field = new Field(io);
+  playerRoles = [PlayerRoles.Player1, PlayerRoles.Player2];
+  for(let socket in io.sockets.sockets) {
+    io.sockets.sockets[socket].disconnect();
+  }
+}
+
+initGame();
+
+const getPlayerRole = (): PlayerRoles | undefined => {
+  return playerRoles.shift();
+}
+
+io.on('connection', socket => {
+  socket.on(Constants.SOCKET_NEW_PLAYER, () => {
+    const role = getPlayerRole();
+    console.log({ROLE: role});
+    if(role != undefined) {
+        field.addPlayer(socket);
+        socket.emit(Constants.SOCKET_ROLE_ASSIGN, role);
+
+        if(playerRoles.length == 0) {
+          setTimeout(() => { io.sockets.emit(Constants.SOCKET_PLAYERS_READY) }, 100);
+        }
+    }
+  });
+
+  socket.on(Constants.SOCKET_PLAYER_ACTION, data => {
+    field.updatePlayerOnInput(socket.id, data)
+  });
+
+  socket.on(Constants.SOCKET_DISCONNECT, () => {
+    io.sockets.emit(Constants.SOCKET_PLAYER_LEAVE);
+    initGame();
+  });
+})
 
 
-var app = express();
+/**
+ * Normalize a port into a number, string, or false.
+ */
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-// app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'dist/client')));
+function normalizePort(val: string) {
+  const port = parseInt(val, 10);
 
-// catch 404 and forward to error handler
-app.use(function(req: Request, res: Response, next: NextFunction) {
-  next(createError(404));
-});
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
 
-// error handler
-app.use(function(err: any, req: Request, res: Response, next: NextFunction) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+  if (port >= 0) {
+    // port number
+    return port;
+  }
 
-  // render the error page
-  res.status(err.status || 500);
-  res.send('error');
-});
+  return false;
+}
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
+/**
+ * Event listener for HTTP server "error" event.
+ */
 
-module.exports = app;
+function onError(error: HttpError) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  const bind = typeof port === 'string' ?
+      'Pipe ' + port :
+      'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  const addr = server.address();
+
+  const bind = typeof addr === 'string' ?
+      'pipe ' + addr :
+      // @ts-ignore
+      'port ' + addr.port;
+  console.log('Listening on ' + bind);
+}
