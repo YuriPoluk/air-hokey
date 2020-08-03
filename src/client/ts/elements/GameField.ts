@@ -6,6 +6,14 @@ import Constants from "../../../shared/Constants";
 import { playerRole } from '../networking'
 import { getCurrentState } from "../state";
 import { getRectangleSprite } from '../../../shared/Utils'
+import W = PIXI.groupD8.W;
+
+interface Walls {
+    left: Sprite,
+    topLeft: Sprite,
+    right: Sprite,
+    topRight: Sprite
+}
 
 export default class GameField extends PIXI.Container {
 
@@ -14,11 +22,13 @@ export default class GameField extends PIXI.Container {
     playerInput!: {x: number, y: number};
 
     background!: Sprite;
+    markup!: Sprite;
 
     player1!: Sprite;
     player2!: Sprite;
     currPlayer!: Sprite;
     puck!: Sprite;
+    walls: Walls[] = [];
 
     hitArea = new PIXI.Rectangle(0, 0, Constants.WIDTH, Constants.HEIGHT)
     interactive = true;
@@ -35,7 +45,6 @@ export default class GameField extends PIXI.Container {
     }
 
     setRole(role: PlayerRoles) {
-        console.log(role, PlayerRoles.Player1)
         this.currPlayer = role === PlayerRoles.Player1 ? this.player1 : this.player2;
         this.currPlayer.interactive = true;
 
@@ -67,8 +76,6 @@ export default class GameField extends PIXI.Container {
             if(localPos.y > Constants.HEIGHT/2 - Constants.PLAYER_WIDTH/2) localPos.y = Constants.HEIGHT/2 - Constants.PLAYER_WIDTH/2;
         }
 
-        console.log('prevPosOnClient', {x: this.currPlayer.x, y: this.currPlayer.y})
-        console.log({x: localPos.x, y: localPos.y})
         this.playerInput = {x: localPos.x, y: localPos.y};
     }
 
@@ -85,31 +92,57 @@ export default class GameField extends PIXI.Container {
     }
 
     init() {
-        this.background = this.addChild(getRectangleSprite(2, 2, this.gameController, 0xf5f5f5));
+        this.background = this.addChild(new Sprite('background'));
         this.background.width = Constants.WIDTH;
         this.background.height = Constants.HEIGHT;
         this.background.position.set(Constants.WIDTH/2, Constants.HEIGHT/2);
 
+        this.markup = this.addChild(new Sprite('field_markup'));
+        this.markup.scale.set(Constants.FIELD_WIDTH / this.markup.getLocalBounds().width);
+        this.markup.position.set(Constants.WIDTH/2, Constants.HEIGHT/2);
+
+        this.walls[PlayerRoles.Player1] = {} as Walls;
+        this.walls[PlayerRoles.Player2] = {} as Walls;
+
+        const WALL_WIDTH = 8;
+
         //field bounds
-        let leftConstraint = this.addChild(getRectangleSprite(Constants.CONSTRAINT_WIDTH, Constants.FIELD_HEIGHT, this.gameController));
-        leftConstraint.position.set(Constants.CONSTRAINT_WIDTH / 2, Constants.FIELD_HEIGHT / 2 + Constants.CONSTRAINT_WIDTH);
-        let rightConstraint = this.addChild(getRectangleSprite(Constants.CONSTRAINT_WIDTH, Constants.FIELD_HEIGHT, this.gameController));
-        rightConstraint.position.set(Constants.WIDTH - Constants.CONSTRAINT_WIDTH / 2, Constants.FIELD_HEIGHT / 2 + Constants.CONSTRAINT_WIDTH);
-        let topLeftConstraint = this.addChild(getRectangleSprite(Constants.WIDTH/2 - Constants.GATE_WIDTH/2, Constants.CONSTRAINT_WIDTH, this.gameController));
-        topLeftConstraint.position.set((Constants.WIDTH - Constants.GATE_WIDTH) / 4, Constants.CONSTRAINT_WIDTH / 2);
-        let topRightConstraint = this.addChild(getRectangleSprite(Constants.WIDTH/2 - Constants.GATE_WIDTH/2, Constants.CONSTRAINT_WIDTH, this.gameController));
-        topRightConstraint.position.set(Constants.WIDTH - (Constants.WIDTH - Constants.GATE_WIDTH) / 4, Constants.CONSTRAINT_WIDTH / 2);
-        let bottomLeftConstraint = this.addChild(getRectangleSprite(Constants.WIDTH/2 - Constants.GATE_WIDTH/2, Constants.CONSTRAINT_WIDTH, this.gameController));
-        bottomLeftConstraint.position.set((Constants.WIDTH - Constants.GATE_WIDTH) / 4, Constants.HEIGHT - Constants.CONSTRAINT_WIDTH / 2);
-        let bottomRightConstraint = this.addChild(getRectangleSprite(Constants.WIDTH/2 - Constants.GATE_WIDTH/2, Constants.CONSTRAINT_WIDTH, this.gameController));
-        bottomRightConstraint.position.set(Constants.WIDTH - (Constants.WIDTH - Constants.GATE_WIDTH) / 4, Constants.HEIGHT - Constants.CONSTRAINT_WIDTH / 2);
+        this.walls[PlayerRoles.Player1].left = this.addChild(new Sprite('wall_blue_v'));
+        this.walls[PlayerRoles.Player1].left.scale.set((Constants.FIELD_HEIGHT/2)/this.walls[PlayerRoles.Player1].left.getLocalBounds().height);
+        this.walls[PlayerRoles.Player1].left.position.set(Constants.WIDTH - Constants.CONSTRAINT_WIDTH + 14/2, Constants.FIELD_HEIGHT*0.75 + Constants.CONSTRAINT_WIDTH);
+
+        this.walls[PlayerRoles.Player1].right = this.addChild(new Sprite('wall_blue_v'));
+        this.walls[PlayerRoles.Player1].right.scale.set((Constants.FIELD_HEIGHT/2)/this.walls[PlayerRoles.Player1].right.getLocalBounds().height);
+        this.walls[PlayerRoles.Player1].right.position.set(Constants.CONSTRAINT_WIDTH - 14/2, Constants.FIELD_HEIGHT*0.75 + Constants.CONSTRAINT_WIDTH);
+
+        this.walls[PlayerRoles.Player1].topRight = this.addChild(new Sprite('wall_blue_h'));
+        this.walls[PlayerRoles.Player1].topRight.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player1].topRight.getLocalBounds().width);
+        this.walls[PlayerRoles.Player1].topRight.position.set((Constants.CONSTRAINT_WIDTH + (Constants.WIDTH - Constants.GATE_WIDTH)/2)/2, Constants.HEIGHT - Constants.CONSTRAINT_WIDTH + 11/2);
+        this.walls[PlayerRoles.Player1].topLeft = this.addChild(new Sprite('wall_blue_h'));
+        this.walls[PlayerRoles.Player1].topLeft.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player1].topLeft.getLocalBounds().width);
+        this.walls[PlayerRoles.Player1].topLeft.position.set((Constants.WIDTH - Constants.CONSTRAINT_WIDTH + Constants.WIDTH/2 + Constants.GATE_WIDTH/2)/2, Constants.HEIGHT - Constants.CONSTRAINT_WIDTH + 11/2);
+
+        this.walls[PlayerRoles.Player2].left = this.addChild(new Sprite('wall_purple_v'));
+        this.walls[PlayerRoles.Player2].left.scale.set((Constants.FIELD_HEIGHT/2)/this.walls[PlayerRoles.Player2].left.getLocalBounds().height);
+        this.walls[PlayerRoles.Player2].left.position.set(Constants.CONSTRAINT_WIDTH - 14/2, Constants.FIELD_HEIGHT*0.25 + Constants.CONSTRAINT_WIDTH);
+
+        this.walls[PlayerRoles.Player2].right = this.addChild(new Sprite('wall_purple_v'));
+        this.walls[PlayerRoles.Player2].right.scale.set((Constants.FIELD_HEIGHT/2)/this.walls[PlayerRoles.Player2].right.getLocalBounds().height);
+        this.walls[PlayerRoles.Player2].right.position.set(Constants.WIDTH - Constants.CONSTRAINT_WIDTH + 14/2, Constants.FIELD_HEIGHT*0.25 + Constants.CONSTRAINT_WIDTH);
+
+        this.walls[PlayerRoles.Player2].topLeft = this.addChild(new Sprite('wall_purple_h'));
+        this.walls[PlayerRoles.Player2].topLeft.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player2].topLeft.getLocalBounds().width);
+        this.walls[PlayerRoles.Player2].topLeft.position.set((Constants.CONSTRAINT_WIDTH + (Constants.WIDTH - Constants.GATE_WIDTH)/2)/2, Constants.CONSTRAINT_WIDTH - 11/2);
+        this.walls[PlayerRoles.Player2].topRight = this.addChild(new Sprite('wall_purple_h'));
+        this.walls[PlayerRoles.Player2].topRight.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player2].topRight.getLocalBounds().width);
+        this.walls[PlayerRoles.Player2].topRight.position.set((Constants.WIDTH - Constants.CONSTRAINT_WIDTH + Constants.WIDTH/2 + Constants.GATE_WIDTH/2)/2, Constants.CONSTRAINT_WIDTH - 11/2);
 
         //strikers and puck
-        this.player1 = this.addChild(new Sprite('blue'));
+        this.player1 = this.addChild(new Sprite('striker_blue'));
         this.player1.width = this.player1.height = Constants.PLAYER_WIDTH;
         this.player1.position.set(Constants.WIDTH/2, Constants.HEIGHT/2 + Constants.FIELD_HEIGHT/4)
 
-        this.player2 = this.addChild(new Sprite('red'));
+        this.player2 = this.addChild(new Sprite('striker_purple'));
         this.player2.width = this.player2.height = Constants.PLAYER_WIDTH;
         this.player2.position.set(Constants.WIDTH/2, Constants.HEIGHT/2 - Constants.FIELD_HEIGHT/4)
 

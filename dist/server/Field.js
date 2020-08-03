@@ -87,6 +87,7 @@ class Field {
     sendState() {
         for (const socket of this.playerSockets) {
             socket.emit(Constants_1.default.SOCKET_UPDATE, {
+                t: Date.now(),
                 player1: this.player1Entity.body.position,
                 player2: this.player2Entity.body.position,
                 puck: this.puck.position

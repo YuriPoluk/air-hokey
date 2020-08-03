@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 "use strict";
-/**
- * Module dependencies.
- */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -13,33 +10,36 @@ const socket_io_1 = __importDefault(require("socket.io"));
 const Field_1 = __importDefault(require("./Field"));
 const Constants_1 = __importDefault(require("../shared/Constants"));
 const PlayerRoles_1 = require("../shared/PlayerRoles");
-/**
- * Get port from environment and store in Express.
- */
 const port = normalizePort(process.env.PORT || '3000');
 app_1.default.set('port', port);
-/**
- * Create HTTP server.
- */
 const server = http_1.default.createServer(app_1.default);
-/**
- * Listen on provided port, on all network interfaces.
- */
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
 const io = socket_io_1.default(server);
-const field = new Field_1.default(io);
+let field;
+let playerRoles;
+const initGame = () => {
+    field = new Field_1.default(io);
+    playerRoles = [PlayerRoles_1.PlayerRoles.Player1, PlayerRoles_1.PlayerRoles.Player2];
+    for (let socket in io.sockets.sockets) {
+        io.sockets.sockets[socket].disconnect();
+    }
+};
+initGame();
+const getPlayerRole = () => {
+    return playerRoles.shift();
+};
 io.on('connection', socket => {
     socket.on(Constants_1.default.SOCKET_NEW_PLAYER, () => {
-        if (field.playerSockets.length == 0) {
+        const role = getPlayerRole();
+        console.log({ ROLE: role });
+        if (role != undefined) {
             field.addPlayer(socket);
-            socket.emit(Constants_1.default.SOCKET_ROLE_ASSIGN, PlayerRoles_1.PlayerRoles.Player1);
-        }
-        else if (field.playerSockets.length == 1) {
-            field.addPlayer(socket);
-            socket.emit(Constants_1.default.SOCKET_ROLE_ASSIGN, PlayerRoles_1.PlayerRoles.Player2);
-            io.sockets.emit(Constants_1.default.SOCKET_PLAYERS_READY);
+            socket.emit(Constants_1.default.SOCKET_ROLE_ASSIGN, role);
+            if (playerRoles.length == 0) {
+                setTimeout(() => { io.sockets.emit(Constants_1.default.SOCKET_PLAYERS_READY); }, 100);
+            }
         }
     });
     socket.on(Constants_1.default.SOCKET_PLAYER_ACTION, data => {
@@ -47,6 +47,7 @@ io.on('connection', socket => {
     });
     socket.on(Constants_1.default.SOCKET_DISCONNECT, () => {
         io.sockets.emit(Constants_1.default.SOCKET_PLAYER_LEAVE);
+        initGame();
     });
 });
 /**

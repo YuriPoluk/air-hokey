@@ -68,7 +68,7 @@ function createAssetsList(done) {
         }
     });
     contents = 'export const ASSETS_CONFIG: {[index: string]:any} = ' + JSON.stringify(contents) + ';';
-    return fs.writeFile('src/ASSETS_CONFIG.ts', contents, done);
+    return fs.writeFile('./src/client/ts/configs/ASSETS_CONFIG.ts', contents, done);
 }
 
 exports.default = series(cleanAssetsFolder, parallel(packAtlases, packImages, packSounds, packSpines, packFonts), createAssetsList)

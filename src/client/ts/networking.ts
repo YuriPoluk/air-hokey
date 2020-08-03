@@ -5,7 +5,7 @@ import GameController from "./core/GameController";
 
 const socketProtocol = (window.location.protocol.includes('https')) ? 'wss' : 'ws';
 console.log(window.location.host)
-export const socket = io(`${socketProtocol}://localhost:3000`, { reconnection: false, forceNew: true });
+export const socket = io(`${socketProtocol}://${window.location.host}`, { reconnection: false, forceNew: true });
 export let playerRole: string;
 
 console.log({originalSocket: socket})
