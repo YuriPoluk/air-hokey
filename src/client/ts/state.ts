@@ -1,12 +1,26 @@
 const RENDER_DELAY = 0;
 
 const gameUpdates: any[] = [];
+let collisions: any[] = [];
 let gameStart = 0;
 let firstServerTimestamp = 0;
 
 export function initState() {
     gameStart = 0;
     firstServerTimestamp = 0;
+    collisions = [];
+}
+
+export function getCurrentCollisions() {
+    let serverTime = currentServerTime();
+    let collisionsHappened = collisions.filter(collision => {
+        return collision.t <= serverTime
+    });
+    collisions = collisions.filter(collision => {
+        return collision.t > serverTime;
+    });
+
+    return collisionsHappened;
 }
 
 export function processGameUpdate(update: any) {
@@ -15,6 +29,14 @@ export function processGameUpdate(update: any) {
         gameStart = Date.now();
     }
     gameUpdates.push(update);
+    if(update.collisions.length) {
+        for(let collision of update.collisions) {
+            collisions.push({
+                t: update.t,
+                data: collision
+            });
+        }
+    }
 
     // Keep only one game update before the current server time
     const base = getBaseUpdate();

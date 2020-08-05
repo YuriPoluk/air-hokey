@@ -42,7 +42,7 @@ const loadFonts = (): Promise<void> => {
         const url = "../assets/fonts/" + font;
         styles.insertRule(`@font-face {font-family: "${name}"; src: url("${url}");}`);
         console.log(`@font-face {font-family: "${name}"; src: url("${url}");}`);
-        observer.push(new FontFaceObserver('Pangolin').load());
+        observer.push(new FontFaceObserver(name).load());
     });
 
     //@ts-ignore

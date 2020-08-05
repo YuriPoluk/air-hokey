@@ -1,9 +1,10 @@
-import MainGame from '../scenes/MainGame'
 import {preloadAssets} from '../libs/assetsLoading';
 import GameScene from "./GameScene";
 import {LayoutManager} from "../libs/LayoutManager";
 import {socket, connect} from '../networking';
 import { initState } from "../state";
+import StartScreen from '../scenes/StartScreen'
+import { gsap } from 'gsap';
 
 export default class GameController {
     private static instance: GameController;
@@ -24,13 +25,18 @@ export default class GameController {
         });
 
         this.app.ticker.add(this.tick, this);
+        this.app.ticker.stop();
+        gsap.ticker.add(() => {
+            this.app.ticker.update();
+        });
+
         this.initLayoutManager();
 
         //@ts-ignore
         window.GAME = this;
         window.PIXI = PIXI;
 
-        Promise.all([preloadAssets(), connect()]).then( () => {
+        Promise.all([preloadAssets()]).then( () => {
             initState();
             this.start();
         });
@@ -73,7 +79,7 @@ export default class GameController {
     }
 
     start(): void {
-        this.showWindow(new MainGame());
+        this.showWindow(new StartScreen());
     }
 
     tick(): void {

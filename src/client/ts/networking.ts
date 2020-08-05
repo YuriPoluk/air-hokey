@@ -1,12 +1,12 @@
 import io from 'socket.io-client';
 import Constants from "../../shared/Constants";
 import { processGameUpdate } from "./state";
-import GameController from "./core/GameController";
+import {PlayerRoles} from "../../shared/PlayerRoles";
 
 const socketProtocol = (window.location.protocol.includes('https')) ? 'wss' : 'ws';
 console.log(window.location.host)
-export const socket = io(`${socketProtocol}://${window.location.host}`, { reconnection: false, forceNew: true });
-export let playerRole: string;
+export const socket = io(`${socketProtocol}://localhost:3000`, { reconnection: false, forceNew: true });
+export let playerRole: PlayerRoles;
 
 console.log({originalSocket: socket})
 
@@ -19,7 +19,7 @@ const connectedPromise = new Promise(resolve => {
 });
 
 const getRolePromise = new Promise(resolve => {
-    socket.on(Constants.SOCKET_ROLE_ASSIGN, (role: string) => {
+    socket.on(Constants.SOCKET_ROLE_ASSIGN, (role: PlayerRoles) => {
         playerRole = role;
         resolve();
     });
