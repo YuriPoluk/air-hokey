@@ -211,7 +211,7 @@ export default class GameField extends PIXI.Container {
 
 
         this.puck = this.addChild(new FieldElement('puck'));
-        this.puck.scale.set(Constants.PUCK_WIDTH / this.puck.view.getLocalBounds().width);
+        this.puck.scale.set(Constants.PUCK_WIDTH*viewMultiplier / this.puck.view.getLocalBounds().width);
         this.puck.position.set(Constants.WIDTH/2, Constants.HEIGHT/2);
         //
         // this.debugOverlay = this.addChild(getRectangleSprite(Constants.FIELD_WIDTH, Constants.FIELD_HEIGHT, this.gameController, 0xff0000));

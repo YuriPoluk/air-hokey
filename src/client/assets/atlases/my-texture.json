@@ -360,6 +360,30 @@
         "y": 0.5
       }
     },
+    "puck_e": {
+      "frame": {
+        "x": 160,
+        "y": 1844,
+        "w": 114,
+        "h": 114
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 3,
+        "y": 3,
+        "w": 114,
+        "h": 114
+      },
+      "sourceSize": {
+        "w": 121,
+        "h": 121
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
     "striker_purple_e": {
       "frame": {
         "x": 413,
@@ -386,8 +410,8 @@
     },
     "puck": {
       "frame": {
-        "x": 160,
-        "y": 1844,
+        "x": 611,
+        "y": 1341,
         "w": 106,
         "h": 106
       },
@@ -426,30 +450,6 @@
       "sourceSize": {
         "w": 741,
         "h": 1335
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      }
-    },
-    "puck_e": {
-      "frame": {
-        "x": 160,
-        "y": 1844,
-        "w": 106,
-        "h": 106
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 106,
-        "h": 106
-      },
-      "sourceSize": {
-        "w": 106,
-        "h": 106
       },
       "pivot": {
         "x": 0.5,
