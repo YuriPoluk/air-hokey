@@ -3,7 +3,7 @@ let Constants = {
     FIELD_HEIGHT: 667,
     CONSTRAINT_WIDTH: 25,
     MAX_VELOCITY: 4,
-    PLAY_TO_SCORE: 6,
+    PLAY_TO_SCORE: 2,
 
     SOCKET_UPDATE: 'update',
     SOCKET_NEW_PLAYER: 'new-player',

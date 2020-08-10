@@ -8,10 +8,7 @@ export default {
 		"end": 0.3,
 		"minimumScaleMultiplier": 2
 	},
-	"color": {
-		"start": "#ffffff",
-		"end": "#9ff3ff"
-	},
+
 	"speed": {
 		"start": 200,
 		"end": 50,

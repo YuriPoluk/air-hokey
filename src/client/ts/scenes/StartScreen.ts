@@ -12,10 +12,7 @@ export default class StartScreen extends GameScene  {
         super();
         this.createChildren();
 
-        this.playBtn.once('pointerdown', async () => {
-            await connect();
-            this.gameController.showWindow(new MainGame())
-        })
+
     }
 
     createChildren() {

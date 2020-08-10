@@ -1,16 +1,15 @@
 import Sprite from "../libs/Sprite";
-import {Body, Constraint, Engine, World} from "matter-js";
+import { Engine } from "matter-js";
 import GameController from "../core/GameController";
-import {PlayerRoles} from '../../../shared/PlayerRoles';
+import { PlayerRoles } from '../../../shared/PlayerRoles';
 import Constants from "../../../shared/Constants";
-import { playerRole } from '../networking'
 import { getCurrentState, getCurrentCollisions } from "../state";
 import sound from 'pixi-sound';
 import FieldElement from "./FieldElement";
 import * as particles from 'pixi-particles'
 import emitterConfig from '../configs/emitter_config';
-import {getCollisionPoint} from "../../../shared/Utils";
-
+import { getCollisionPoint } from "../../../shared/Utils";
+import { gsap } from 'gsap';
 
 
 interface Walls {
@@ -35,9 +34,11 @@ export default class GameField extends PIXI.Container {
     player1!: FieldElement;
     player2!: FieldElement;
     currPlayer!: FieldElement;
+    enemyPlayer!: FieldElement;
     puck!: FieldElement;
     walls: Walls[] = [];
     fieldObjects = {} as any;
+    role!: PlayerRoles;
 
     hitArea = new PIXI.Rectangle(0, 0, Constants.WIDTH, Constants.HEIGHT)
     debugOverlay!: Sprite;
@@ -47,23 +48,23 @@ export default class GameField extends PIXI.Container {
     COLOR_BLUE = '#17ffff';
     COLOR_PURPLE = '#d500f9';
 
-    constructor(role: PlayerRoles) {
+    constructor() {
         super();
         this.pivot.set(Constants.WIDTH/2, Constants.HEIGHT/2);
         this.engine.world.bounds = { min: { x: 0, y: 0 }, max: { x: Constants.WIDTH, y: Constants.HEIGHT }};
         this.engine.world.gravity.y = 0;
         this.init();
-        this.setRole(role);
     }
 
     setRole(role: PlayerRoles) {
+        this.role = role;
         this.currPlayer = role === PlayerRoles.Player1 ? this.player1 : this.player2;
-        this.currPlayer.interactive = true;
+
+        console.log('SET ROLE', role)
+        this.showPlayersAndBounds()
+
 
         this.currPlayer.on('pointerdown', this.onPointerDown, this);
-        this.on('pointerdown', (e: PIXI.interaction.InteractionEvent) => {
-            console.log(e.data.getLocalPosition(this))
-        });
         this.on('pointermove', this.onPointerMove, this);
         this.on('pointerup', this.onPointerUp, this);
     }
@@ -77,7 +78,7 @@ export default class GameField extends PIXI.Container {
         let localPos =  e.data.getLocalPosition(this);
         if(localPos.x < Constants.CONSTRAINT_WIDTH + Constants.PLAYER_WIDTH/2) localPos.x = Constants.CONSTRAINT_WIDTH + Constants.PLAYER_WIDTH/2;
         if(localPos.x > Constants.WIDTH - Constants.CONSTRAINT_WIDTH - Constants.PLAYER_WIDTH/2) localPos.x = Constants.WIDTH - Constants.CONSTRAINT_WIDTH - Constants.PLAYER_WIDTH/2;
-        if(playerRole == PlayerRoles.Player1) {
+        if(this.role == PlayerRoles.Player1) {
             if(localPos.y < Constants.CONSTRAINT_WIDTH + Constants.FIELD_HEIGHT/2 + Constants.PLAYER_WIDTH/2)
                 localPos.y = Constants.CONSTRAINT_WIDTH + Constants.FIELD_HEIGHT/2 + Constants.PLAYER_WIDTH/2;
             if(localPos.y > Constants.HEIGHT - Constants.CONSTRAINT_WIDTH - Constants.PLAYER_WIDTH/2) localPos.y = Constants.HEIGHT - Constants.CONSTRAINT_WIDTH - Constants.PLAYER_WIDTH/2;
@@ -93,6 +94,44 @@ export default class GameField extends PIXI.Container {
 
     onPointerUp(e: PIXI.interaction.InteractionEvent) {
         this.pointerDowned = false;
+    }
+
+    showPlayersAndBounds() {
+        gsap.to(Object.values(this.fieldObjects), {
+            alpha: 1,
+            duration: 1,
+            onComplete: () => { this.currPlayer.interactive = true }
+        })
+
+        this.puck.alpha = 1;
+        this.setPuck(0);
+    }
+
+    onGoal() {
+        this.pointerDowned = false;
+        this.currPlayer.interactive = false;
+        this.puck.alpha = 0;
+        this.setPuck(1);
+    }
+
+    onGameOver() {
+        this.currPlayer.interactive = false;
+        this.puck.visible = false;
+    }
+
+    setPuck(delay: number) {
+        gsap.fromTo(this.puck.scale, {
+            x: this.puck.scale.x * 2.5,
+            y: this.puck.scale.y * 2.5,
+        }, {
+            x: this.puck.scale.x,
+            y: this.puck.scale.y,
+            duration: 1,
+            delay: delay,
+            onComplete: () => { this.currPlayer.interactive = true },
+            onStart: () => { this.puck.alpha = 1 }
+        })
+
     }
 
     updateBodies() {
@@ -124,28 +163,34 @@ export default class GameField extends PIXI.Container {
             }
 
             let collisionPoint = getCollisionPoint(collision.data, colliderType);
-            let color;
+            let player: number;
             if(collisionPoint.y > Constants.HEIGHT/2){
-                color = this.COLOR_BLUE
+                player = 2;
             }
             else {
-                color = this.COLOR_PURPLE
+                player = 1;
             }
 
-            this.launchParticles(collisionPoint, color);
+            this.launchParticles(collisionPoint, player);
             console.log
             this.fieldObjects[collision.data.name].glowUp();
         }
     }
 
-    launchParticles(point: {x: number, y: number}, color: string): void {
+    launchParticles(point: {x: number, y: number}, player: number): void {
         emitterConfig.pos = point;
-        emitterConfig.color.start = color;
-        emitterConfig.color.end = color;
+
+        let images: string[] = [];
+        if(player == 1) {
+            images = ['purple_triangle', 'purple_circle', 'purple_square'];
+        }
+        else {
+            images = ['blue_triangle', 'blue_circle', 'blue_square'];
+        }
 
         const emitter = new particles.Emitter(
             this.particlesCnt,
-            ['Pixel25px'],
+            images,
             emitterConfig);
         emitter.updateSpawnPos(point.x, point.y);
         emitter.playOnceAndDestroy();
@@ -178,10 +223,10 @@ export default class GameField extends PIXI.Container {
         this.walls[PlayerRoles.Player1].right.position.set(Constants.CONSTRAINT_WIDTH - 3, Constants.FIELD_HEIGHT*0.75 + Constants.CONSTRAINT_WIDTH);
 
         this.walls[PlayerRoles.Player1].topRight = this.addChild(new FieldElement('wall_blue_h'));
-        this.walls[PlayerRoles.Player1].topRight.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player1].topRight.view.getLocalBounds().width);
+        this.walls[PlayerRoles.Player1].topRight.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2 + 7)/this.walls[PlayerRoles.Player1].topRight.view.getLocalBounds().width);
         this.walls[PlayerRoles.Player1].topRight.position.set((Constants.CONSTRAINT_WIDTH + (Constants.WIDTH - Constants.GATE_WIDTH)/2)/2, Constants.HEIGHT - Constants.CONSTRAINT_WIDTH + 3);
         this.walls[PlayerRoles.Player1].topLeft = this.addChild(new FieldElement('wall_blue_h'));
-        this.walls[PlayerRoles.Player1].topLeft.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player1].topLeft.view.getLocalBounds().width);
+        this.walls[PlayerRoles.Player1].topLeft.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2 + 7)/this.walls[PlayerRoles.Player1].topLeft.view.getLocalBounds().width);
         this.walls[PlayerRoles.Player1].topLeft.position.set((Constants.WIDTH - Constants.CONSTRAINT_WIDTH + Constants.WIDTH/2 + Constants.GATE_WIDTH/2)/2, Constants.HEIGHT - Constants.CONSTRAINT_WIDTH + 3);
 
         this.walls[PlayerRoles.Player2].left = this.addChild(new FieldElement('wall_purple_v'));
@@ -193,13 +238,13 @@ export default class GameField extends PIXI.Container {
         this.walls[PlayerRoles.Player2].right.position.set(Constants.WIDTH - Constants.CONSTRAINT_WIDTH + 3, Constants.FIELD_HEIGHT*0.25 + Constants.CONSTRAINT_WIDTH);
 
         this.walls[PlayerRoles.Player2].topLeft = this.addChild(new FieldElement('wall_purple_h'));
-        this.walls[PlayerRoles.Player2].topLeft.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player2].topLeft.view.getLocalBounds().width);
+        this.walls[PlayerRoles.Player2].topLeft.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2 + 7)/this.walls[PlayerRoles.Player2].topLeft.view.getLocalBounds().width);
         this.walls[PlayerRoles.Player2].topLeft.position.set((Constants.CONSTRAINT_WIDTH + (Constants.WIDTH - Constants.GATE_WIDTH)/2)/2, Constants.CONSTRAINT_WIDTH - 3);
         this.walls[PlayerRoles.Player2].topRight = this.addChild(new FieldElement('wall_purple_h'));
-        this.walls[PlayerRoles.Player2].topRight.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player2].topRight.view.getLocalBounds().width);
+        this.walls[PlayerRoles.Player2].topRight.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2 + 7)/this.walls[PlayerRoles.Player2].topRight.view.getLocalBounds().width);
         this.walls[PlayerRoles.Player2].topRight.position.set((Constants.WIDTH - Constants.CONSTRAINT_WIDTH + Constants.WIDTH/2 + Constants.GATE_WIDTH/2)/2, Constants.CONSTRAINT_WIDTH - 3);
 
-        const viewMultiplier = 1.5; //multiplier for correct scale of strikers
+        const viewMultiplier = 1.25; //multiplier for correct scale of strikers
         //strikers and puck
         this.player1 = this.addChild(new FieldElement('striker_blue'));
         this.player1.scale.set(Constants.PLAYER_WIDTH*viewMultiplier / this.player1.view.getLocalBounds().width);
@@ -207,13 +252,16 @@ export default class GameField extends PIXI.Container {
 
         this.player2 = this.addChild(new FieldElement('striker_purple'));
         this.player2.scale.set(Constants.PLAYER_WIDTH*viewMultiplier / this.player2.view.getLocalBounds().width);
-        this.player2.position.set(Constants.WIDTH/2, Constants.HEIGHT/2 - Constants.FIELD_HEIGHT/4)
+        this.player2.position.set(Constants.WIDTH/2, Constants.HEIGHT/2 - Constants.FIELD_HEIGHT/4);
 
 
         this.puck = this.addChild(new FieldElement('puck'));
         this.puck.scale.set(Constants.PUCK_WIDTH*viewMultiplier / this.puck.view.getLocalBounds().width);
         this.puck.position.set(Constants.WIDTH/2, Constants.HEIGHT/2);
-        //
+        this.puck.alpha = 0;
+
+
+
         // this.debugOverlay = this.addChild(getRectangleSprite(Constants.FIELD_WIDTH, Constants.FIELD_HEIGHT, this.gameController, 0xff0000));
         // this.debugOverlay.anchor.set(0);
         // this.debugOverlay.position.set(Constants.CONSTRAINT_WIDTH, Constants.CONSTRAINT_WIDTH);
@@ -229,6 +277,10 @@ export default class GameField extends PIXI.Container {
             'p2_right': this.walls[PlayerRoles.Player2].right,
             'p2_topleft': this.walls[PlayerRoles.Player2].topLeft,
             'p2_topright': this.walls[PlayerRoles.Player2].topRight,
+        }
+
+        for (let obj in this.fieldObjects) {
+            this.fieldObjects[obj].alpha = 0
         }
 
     }

@@ -43,8 +43,7 @@ io.on('connection', socket => {
         socket.emit(Constants.SOCKET_ROLE_ASSIGN, role);
 
         if(playerRoles.length == 0) {
-          console.log('READY')
-          setTimeout(() => { io.sockets.emit(Constants.SOCKET_PLAYERS_READY) }, 3000);
+          setTimeout(()=>{io.sockets.emit(Constants.SOCKET_PLAYERS_READY)}, 500);
         }
     }
   });

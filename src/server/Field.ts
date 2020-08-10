@@ -103,7 +103,6 @@ export default class Field {
     }
 
     addPlayer(socket: SocketIO.Socket) {
-        console.log('SOCKET', socket.id);
         this.playerSockets.push(socket);
     }
 
@@ -207,22 +206,21 @@ export default class Field {
 
 
     checkGoal() {
-        let isGoal = false;
+        let playerScored: PlayerRoles | null = null;
 
         if(this.puck.position.y > Constants.HEIGHT/2 + Constants.FIELD_HEIGHT/2 + 5) {
-            this.serverSocket.sockets.emit(Constants.SOCKET_GOAL_EVENT, PlayerRoles.Player2);
-            this.goals[PlayerRoles.Player2]++;
-            isGoal = true;
+            playerScored = PlayerRoles.Player2;
         }
         else if(this.puck.position.y < Constants.CONSTRAINT_WIDTH - 5) {
-            this.serverSocket.sockets.emit(Constants.SOCKET_GOAL_EVENT, PlayerRoles.Player1);
-            this.goals[PlayerRoles.Player1]++;
-            isGoal = true;
+            playerScored = PlayerRoles.Player1;
         }
 
-        if(isGoal) {
+        if(playerScored != null) {
+            this.goals[playerScored]++;
             this.shouldProcessInput = false;
-            setTimeout(()=>{ this.shouldProcessInput = true }, 500)
+            setTimeout(()=>{ this.shouldProcessInput = true }, 500);
+            this.serverSocket.sockets.emit(Constants.SOCKET_GOAL_EVENT, playerScored);
+            //win and gameover
             if(this.goals[PlayerRoles.Player1] == this.playToScore || this.goals[PlayerRoles.Player2] == this.playToScore) {
                 const winner = this.goals[PlayerRoles.Player1] == this.playToScore ? PlayerRoles.Player1 : PlayerRoles.Player2;
                 this.serverSocket.sockets.emit(Constants.SOCKET_GAME_OVER_EVENT, winner);

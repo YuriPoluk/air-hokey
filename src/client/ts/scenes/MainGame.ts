@@ -4,9 +4,11 @@ import GameScene from "../core/GameScene";
 import GameField from '../elements/GameField';
 import {PlayerRoles} from '../../../shared/PlayerRoles';
 import Constants from "../../../shared/Constants";
-import {playerRole, connect} from '../networking';
 import { getRectangleSprite } from "../../../shared/Utils";
 import sound from 'pixi-sound';
+import {connect} from "../networking";
+import { gsap } from 'gsap';
+
 
 
 export default class MainGame extends GameScene  {
@@ -19,27 +21,47 @@ export default class MainGame extends GameScene  {
     overlay!: Sprite;
     waitingText!: PIXI.Text;
     scoreText!: PIXI.Text;
+    goalText!: PIXI.Text;
     retryBtn!: Sprite;
-    role = playerRole == PlayerRoles.Player1 ? PlayerRoles.Player1 : PlayerRoles.Player2;
+    playBtn!: Sprite;
+    role!: PlayerRoles;
+    currentTimeline!: gsap.core.Timeline;
 
-
-    interactive = false;
+    interactive = true;
 
     constructor() {
         super();
         this.createChildren();
 
+        this.playBtn.once('pointerdown', async () => {
+            this.playBtn.interactive = false;
+            this.playBtnAnimation();
+            await connect();
+        })
+
+        this.retryBtn.on('pointerdown',() => {
+            location.reload();
+        })
+
         this.gameController.socket.on(Constants.SOCKET_GOAL_EVENT, this.onGoal.bind(this));
         this.gameController.socket.on(Constants.SOCKET_PLAYERS_READY, this.startGame.bind(this));
         this.gameController.socket.on(Constants.SOCKET_GAME_OVER_EVENT, this.onGameOver.bind(this));
+        this.gameController.socket.on(Constants.SOCKET_ROLE_ASSIGN, (role: PlayerRoles) => {
+            this.role = role;
+            if(this.role == PlayerRoles.Player2) {
+                this.gameField.scale.set(-this.gameField.scale.x, -this.gameField.scale.y);
+            }
+            this.gameField.setRole(this.role);
+        });
     }
 
     createChildren(): void {
-        this.gameField = this.addChild(new GameField(this.role));
+        this.gameField = this.addChild(new GameField());
         this.gameField.interactive = false;
         this.particlesCnt = this.addChild(new PIXI.Container());
 
         this.UICnt = this.addChild(new Sprite());
+
         const scoreStyle = new PIXI.TextStyle({
             fontFamily: "ZonaPro",
             fontSize: 100,
@@ -51,39 +73,108 @@ export default class MainGame extends GameScene  {
         this.playerScore.anchor.set(0.5);
         this.enemyScore = this.UICnt.addChild(new PIXI.Text('0', scoreStyle));
         this.enemyScore.anchor.set(0.5);
+
         this.overlay = this.UICnt.addChild(getRectangleSprite(2, 2, this.gameController, 0x000000));
         this.overlay.alpha = 0.5;
-        // scoreStyle.fontSize = 50;
+
         this.waitingText = this.UICnt.addChild(new PIXI.Text('WAITING FOR OTHER PLAYER', scoreStyle));
         this.waitingText.anchor.set(0.5);
+        this.waitingText.alpha = 0;
+
         this.scoreText = this.UICnt.addChild(new PIXI.Text('3', scoreStyle));
         this.scoreText.anchor.set(0.5);
         this.scoreText.visible = false;
+
+        this.goalText = this.UICnt.addChild(new PIXI.Text('GOAL!', scoreStyle));
+        this.goalText.anchor.set(0.5);
+        this.goalText.alpha = 0;
+
         this.winnerText = this.UICnt.addChild(new PIXI.Text('WINNER!', scoreStyle));
         this.winnerText.anchor.set(0.5);
-        this.winnerText.visible = false;
+        this.winnerText.alpha = 0;
+
         this.retryBtn = this.UICnt.addChild(new Sprite('retry_btn'));
-        this.retryBtn.visible = false;
+        this.retryBtn.alpha = 0;
+        this.retryBtn.interactive = true;
+
+        this.playBtn = this.UICnt.addChild(new Sprite('play'));
+        this.playBtn.interactive = true;
+    }
+
+    playBtnAnimation() {
+        this.currentTimeline = gsap.timeline();
+        this.currentTimeline
+            .to(this.playBtn, {
+                alpha: 0,
+                duration: 0.3
+            })
+            .to(this.waitingText, {
+                alpha: 1,
+                duration: 0.3
+            })
+    }
+
+    celebrateAnimation(e: PlayerRoles, event: 'goal' | 'win') {
+        let timeline = gsap.timeline();
+        let rotationStart: number, rotationEnd: number, yEnd: number;
+        let text = event == 'goal' ? this.goalText : this.winnerText;
+        if(e == this.role) {
+            rotationStart = Math.PI;
+            rotationEnd = 0;
+            yEnd = LayoutManager.gameHeight*0.2;
+        }
+        else {
+            rotationStart = 0;
+            rotationEnd = Math.PI;
+            yEnd = - LayoutManager.gameHeight*0.2;
+        }
+
+        timeline
+            .fromTo(text, {
+                y: 0,
+                rotation: rotationStart
+            }, {
+                y: yEnd,
+                rotation: rotationEnd,
+                duration: 0.5,
+                onStart: () => { text.alpha = 1 },
+            })
+            .to(this.goalText, {
+                alpha: 0,
+                duration: 0.5
+            })
     }
 
     startGame() {
-        this.overlay.visible = false;
-        this.waitingText.visible = false;
         this.scoreText.visible = true;
-        setTimeout(()=>{ this.scoreText.text = '2'; }, 1000);
-        setTimeout(()=>{ this.scoreText.text = '1'; }, 2000);
-        setTimeout(()=>{
-            this.scoreText.visible = false;
-            this.gameField.interactive = true;
-        }, 3000);
-    }
+        if(this.currentTimeline)
+            this.currentTimeline.progress(1);
 
-    playParticles() {
-        // this.emitter = new particles.Emitter(
-        //     this.particlesCnt,
-        //     ['Pixel25px'],
-        //     emitterConfig
-        // );
+        this.currentTimeline = gsap.timeline();
+        this.currentTimeline
+            .to([this.overlay, this.waitingText], {
+                alpha: 0,
+                duration: 0.5
+            })
+            .to(this.scoreText, {
+                alpha: 1,
+                duration: 0.5
+            })
+            .to({}, {
+                duration: 1,
+                onComplete: () => { this.scoreText.text = '2' }
+            })
+            .to({}, {
+                duration: 1,
+                onComplete: () => { this.scoreText.text = '1' }
+            })
+            .to({}, {
+                duration: 1,
+                onComplete: () => {
+                    this.scoreText.visible = false;
+                    this.gameField.interactive = true;
+                }
+            })
     }
 
     onGoal(e: PlayerRoles) {
@@ -97,21 +188,18 @@ export default class MainGame extends GameScene  {
         }
 
         sound.play('goal');
+        if(parseInt(this.playerScore.text) < Constants.PLAY_TO_SCORE && parseInt(this.enemyScore.text) < Constants.PLAY_TO_SCORE) {
+            this.celebrateAnimation(e, 'goal');
+            this.gameField.onGoal();
+        }
     }
 
     onGameOver(winner: PlayerRoles) {
-        console.log('GAME OVER')
-        this.gameField.interactive = true;
-        this.winnerText.visible = true;
-        this.retryBtn.visible = true;
-        if(winner !== playerRole) {
-            this.winnerText.rotation = Math.PI;
-            this.winnerText.y = - LayoutManager.gameHeight/4;
-        }
-        else {
-            this.winnerText.rotation = 0;
-            this.winnerText.y = LayoutManager.gameHeight/4;
-        }
+        gsap.to(this.retryBtn, {
+            alpha: 1,
+            duration: 0.5
+        });
+        this.celebrateAnimation(winner, 'win')
     }
 
     onResize(): void {
@@ -137,20 +225,28 @@ export default class MainGame extends GameScene  {
         this.playerScore.scale.x = this.playerScore.scale.y;
         this.enemyScore.scale.set(this.playerScore.scale.x);
 
-        this.playerScore.position.set(w*0.49 - this.playerScore.height *0.75, - this.playerScore.width*2);
-        this.enemyScore.position.set(w*0.49 - this.playerScore.height *0.75, this.enemyScore.width*2);
+        this.playerScore.position.set(w*0.49 - this.playerScore.height *0.75, this.playerScore.width*2);
+        this.enemyScore.position.set(w*0.49 - this.playerScore.height *0.75, - this.enemyScore.width*2);
 
         this.overlay.width = w;
         this.overlay.height = h;
+
         this.waitingText.width = w*0.99;
         this.waitingText.scale.y = this.waitingText.scale.x;
+        this.waitingText.y = -h*0.2;
+
         this.scoreText.width = w*0.2;
         this.scoreText.scale.y = this.scoreText.scale.x;
+
+        this.goalText.width = w*0.5;
+        this.goalText.scale.y = this.winnerText.scale.x;
 
         this.winnerText.width = w*0.9;
         this.winnerText.scale.y = this.winnerText.scale.x;
 
         this.retryBtn.scale.set(w*0.2 / this.retryBtn.getLocalBounds().width);
+
+        this.playBtn.scale.set(w*0.25 / this.playBtn.getLocalBounds().width);
     }
 
     tick(delta: number): void {

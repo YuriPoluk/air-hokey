@@ -5,6 +5,7 @@ import {socket, connect} from '../networking';
 import { initState } from "../state";
 import StartScreen from '../scenes/StartScreen'
 import { gsap } from 'gsap';
+import MainGame from "../scenes/MainGame";
 
 export default class GameController {
     private static instance: GameController;
@@ -79,14 +80,11 @@ export default class GameController {
     }
 
     start(): void {
-        this.showWindow(new StartScreen());
+        this.showWindow(new MainGame());
     }
 
     tick(): void {
         const delta = PIXI.Ticker.shared.elapsedMS;
-
-        // if(window.SpineSprite) SpineSprite.update(delta);
-        // if(window.ParticlesSprite) ParticlesSprite.update(delta);
 
         if(this?.currentWindow) {
             this.currentWindow.tick(delta);
