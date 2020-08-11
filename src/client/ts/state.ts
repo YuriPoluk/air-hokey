@@ -1,4 +1,4 @@
-const RENDER_DELAY = 0;
+const RENDER_DELAY = 35;
 
 const gameUpdates: any[] = [];
 let collisions: any[] = [];
