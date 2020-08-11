@@ -146,7 +146,7 @@ class Field {
             });
         }
     }
-    resetField() {
+    resetField(playerScored) {
         if (this.player1Entity.constraint) {
             matter_js_1.World.remove(this.engine.world, this.player1Entity.constraint);
         }
@@ -156,7 +156,15 @@ class Field {
         this.resetSpeed([this.player1Entity.body, this.player2Entity.body, this.puck]);
         matter_js_1.Body.setPosition(this.player1Entity.body, { x: Constants_1.default.WIDTH / 2, y: Constants_1.default.HEIGHT / 2 + Constants_1.default.FIELD_HEIGHT * 0.35 });
         matter_js_1.Body.setPosition(this.player2Entity.body, { x: Constants_1.default.WIDTH / 2, y: Constants_1.default.HEIGHT / 2 - Constants_1.default.FIELD_HEIGHT * 0.35 });
-        matter_js_1.Body.setPosition(this.puck, { x: Constants_1.default.WIDTH / 2, y: Constants_1.default.HEIGHT / 2 });
+        if (playerScored == PlayerRoles_1.PlayerRoles.Player2) {
+            matter_js_1.Body.setPosition(this.puck, { x: Constants_1.default.WIDTH / 2, y: Constants_1.default.HEIGHT / 2 + Constants_1.default.FIELD_HEIGHT * 0.15 });
+        }
+        else if (playerScored == PlayerRoles_1.PlayerRoles.Player1) {
+            matter_js_1.Body.setPosition(this.puck, { x: Constants_1.default.WIDTH / 2, y: Constants_1.default.HEIGHT / 2 - Constants_1.default.FIELD_HEIGHT * 0.15 });
+        }
+        else {
+            matter_js_1.Body.setPosition(this.puck, { x: Constants_1.default.WIDTH / 2, y: Constants_1.default.HEIGHT / 2 });
+        }
     }
     clampMaxVelocity(obj) {
         if (obj.velocity.x * obj.velocity.x + obj.velocity.y * obj.velocity.y > Constants_1.default.MAX_VELOCITY_SQRD) {
@@ -191,8 +199,7 @@ class Field {
                 const winner = this.goals[PlayerRoles_1.PlayerRoles.Player1] == this.playToScore ? PlayerRoles_1.PlayerRoles.Player1 : PlayerRoles_1.PlayerRoles.Player2;
                 this.serverSocket.sockets.emit(Constants_1.default.SOCKET_GAME_OVER_EVENT, winner);
             }
-            this.resetField();
-            matter_js_1.Body.setPosition(this.puck, { x: Constants_1.default.WIDTH / 2, y: Constants_1.default.HEIGHT / 2 - Constants_1.default.FIELD_HEIGHT * 0.15 });
+            this.resetField(playerScored);
         }
     }
 }
