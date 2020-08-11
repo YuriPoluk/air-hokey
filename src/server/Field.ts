@@ -171,7 +171,7 @@ export default class Field {
         }
     }
 
-    resetField() {
+    resetField(playerScored?: PlayerRoles) {
         if(this.player1Entity.constraint) {
             World.remove(this.engine.world, this.player1Entity.constraint);
         }
@@ -183,7 +183,16 @@ export default class Field {
 
         Body.setPosition(this.player1Entity.body, { x: Constants.WIDTH/2, y: Constants.HEIGHT/2 + Constants.FIELD_HEIGHT*0.35 });
         Body.setPosition(this.player2Entity.body, { x: Constants.WIDTH/2, y: Constants.HEIGHT/2 - Constants.FIELD_HEIGHT*0.35 });
-        Body.setPosition(this.puck, { x: Constants.WIDTH/2, y: Constants.HEIGHT/2 });
+
+        if(playerScored == PlayerRoles.Player2) {
+            Body.setPosition(this.puck, {x:Constants.WIDTH/2, y: Constants.HEIGHT/2 + Constants.FIELD_HEIGHT*0.15});
+        }
+        else if(playerScored == PlayerRoles.Player1) {
+            Body.setPosition(this.puck, {x:Constants.WIDTH/2, y: Constants.HEIGHT/2 - Constants.FIELD_HEIGHT*0.15});
+        }
+        else {
+            Body.setPosition(this.puck, { x: Constants.WIDTH/2, y: Constants.HEIGHT/2 });
+        }
     }
 
     clampMaxVelocity(obj: Body) {
@@ -225,8 +234,7 @@ export default class Field {
                 const winner = this.goals[PlayerRoles.Player1] == this.playToScore ? PlayerRoles.Player1 : PlayerRoles.Player2;
                 this.serverSocket.sockets.emit(Constants.SOCKET_GAME_OVER_EVENT, winner);
             }
-            this.resetField();
-            Body.setPosition(this.puck, {x:Constants.WIDTH/2, y: Constants.HEIGHT/2 - Constants.FIELD_HEIGHT*0.15})
+            this.resetField(playerScored);
         }
     }
 }

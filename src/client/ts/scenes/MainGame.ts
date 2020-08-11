@@ -154,11 +154,8 @@ export default class MainGame extends GameScene  {
         this.currentTimeline
             .to([this.overlay, this.waitingText], {
                 alpha: 0,
-                duration: 0.5
-            })
-            .to(this.scoreText, {
-                alpha: 1,
-                duration: 0.5
+                duration: 0.5,
+                onComplete: () => { this.scoreText.alpha = 1 }
             })
             .to({}, {
                 duration: 1,
