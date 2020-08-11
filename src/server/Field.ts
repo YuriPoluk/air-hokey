@@ -35,7 +35,6 @@ export default class Field {
         this.goals = [0, 0];
         this.init();
         this.updateInterval = setInterval(this.tick.bind(this), 1000 / 60);
-        Events.on(this.engine, 'beforeUpdate', ()=>{this.beforeEngineupdate()});
 
     }
     init() {
@@ -153,7 +152,7 @@ export default class Field {
     }
 
     updateWorld() {
-        // this.beforeEngineupdate();
+        this.beforeEngineupdate();
         Engine.update(this.engine, 1000/60);
 
         this.checkGoal();

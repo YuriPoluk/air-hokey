@@ -25,7 +25,6 @@ class Field {
         this.goals = [0, 0];
         this.init();
         this.updateInterval = setInterval(this.tick.bind(this), 1000 / 60);
-        matter_js_1.Events.on(this.engine, 'beforeUpdate', () => { this.beforeEngineupdate(); });
     }
     init() {
         //field bounds
@@ -131,7 +130,7 @@ class Field {
             this.player1Entity.body.position.y = Constants_1.default.CONSTRAINT_WIDTH + Constants_1.default.PUCK_WIDTH / 2;
     }
     updateWorld() {
-        // this.beforeEngineupdate();
+        this.beforeEngineupdate();
         matter_js_1.Engine.update(this.engine, 1000 / 60);
         this.checkGoal();
     }

@@ -8,6 +8,7 @@ import { getRectangleSprite } from "../../../shared/Utils";
 import sound from 'pixi-sound';
 import {connect} from "../networking";
 import { gsap } from 'gsap';
+import Stats from 'stats.js'
 
 
 
@@ -26,11 +27,13 @@ export default class MainGame extends GameScene  {
     playBtn!: Sprite;
     role!: PlayerRoles;
     currentTimeline!: gsap.core.Timeline;
+    stats = new Stats();
 
     interactive = true;
 
     constructor() {
         super();
+        document.body.appendChild( this.stats.dom );
         this.createChildren();
 
         this.playBtn.once('pointerdown', async () => {
@@ -247,6 +250,8 @@ export default class MainGame extends GameScene  {
     }
 
     tick(delta: number): void {
+        this.stats.begin();
         this.gameField.tick(delta);
+        this.stats.end();
     }
 }
