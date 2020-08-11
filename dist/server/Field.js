@@ -10,15 +10,22 @@ const Constants_1 = __importDefault(require("../shared/Constants"));
 class Field {
     constructor(socket) {
         this.playerSockets = [];
+        this.collisions = [];
+        // prevTickCollisions: any[] = [];
+        this.repeatedCollisions = [];
         this.playToScore = Constants_1.default.PLAY_TO_SCORE;
+        this.shouldFixPuck = false;
         this.shouldProcessInput = true;
         this.serverSocket = socket;
         this.engine = matter_js_1.Engine.create();
         this.engine.world.bounds = { min: { x: 0, y: 0 }, max: { x: Constants_1.default.WIDTH, y: Constants_1.default.HEIGHT } };
         this.engine.world.gravity.y = 0;
+        this.engine.constraintIterations = 3;
+        this.engine.positionIterations = 10;
         this.goals = [0, 0];
         this.init();
-        setInterval(this.tick.bind(this), 1000 / 60);
+        this.updateInterval = setInterval(this.tick.bind(this), 1000 / 60);
+        matter_js_1.Events.on(this.engine, 'beforeUpdate', () => { this.beforeEngineupdate(); });
     }
     init() {
         //field bounds
@@ -51,9 +58,9 @@ class Field {
         this.player2Entity = new PlayerEntity_1.default(player2Body);
         this.puck = matter_js_1.Bodies.circle(Constants_1.default.WIDTH / 2, Constants_1.default.HEIGHT / 2, Constants_1.default.PUCK_WIDTH / 2);
         this.puck.label = 'puck';
-        this.puck.restitution = 0.95;
+        this.puck.restitution = 0.9;
         this.puck.frictionAir = 0.01;
-        this.puck.friction = 0.1;
+        this.puck.friction = 0.03;
         const bodies = [
             p1LeftWall,
             p1RightWall,
@@ -110,28 +117,71 @@ class Field {
             bodyB: player.body,
             pointB: { x: 0, y: 0 },
             length: 0,
-            stiffness: 0.75,
+            stiffness: 0.9,
         });
         matter_js_1.World.add(this.engine.world, player.constraint);
     }
-    updateWorld() {
-        matter_js_1.Engine.update(this.engine, 1000 / 60);
+    beforeEngineupdate() {
         this.clampMaxVelocity(this.puck);
         this.clampMaxVelocity(this.player1Entity.body);
         this.clampMaxVelocity(this.player2Entity.body);
+        if (this.player1Entity.body.position.y > Constants_1.default.HEIGHT / 2 + Constants_1.default.FIELD_HEIGHT / 2 - Constants_1.default.PUCK_WIDTH / 2)
+            this.player1Entity.body.position.y = Constants_1.default.HEIGHT / 2 + Constants_1.default.FIELD_HEIGHT / 2 - Constants_1.default.PUCK_WIDTH / 2;
+        if (this.player2Entity.body.position.y < Constants_1.default.CONSTRAINT_WIDTH + Constants_1.default.PUCK_WIDTH / 2)
+            this.player1Entity.body.position.y = Constants_1.default.CONSTRAINT_WIDTH + Constants_1.default.PUCK_WIDTH / 2;
+    }
+    updateWorld() {
+        // this.beforeEngineupdate();
+        matter_js_1.Engine.update(this.engine, 1000 / 60);
         this.checkGoal();
     }
     tick() {
         this.updateWorld();
-        let collisions = matter_js_1.Query.collides(this.puck, [...this.players, ...this.fieldObjects]);
-        this.collisions = collisions.map(collision => {
+        this.getCollisions();
+        this.fixPuck();
+        this.sendState();
+    }
+    getCollisions() {
+        this.repeatedCollisions = this.repeatedCollisions.filter(x => {
+            x.ticksRemaining--;
+            return x.ticksRemaining >= 0;
+        });
+        let currentCollisions = matter_js_1.Query.collides(this.puck, [...this.players, ...this.fieldObjects]);
+        currentCollisions = currentCollisions.map(collision => {
             return {
                 name: collision.bodyA.label,
                 pos: collision.bodyA.position,
                 puckPos: collision.bodyB.position
             };
         });
-        this.sendState();
+        currentCollisions = currentCollisions.filter(collision => {
+            let isLegit = true;
+            for (let repeatedCollision of this.repeatedCollisions) {
+                if (collision.name == repeatedCollision.name) {
+                    return false;
+                }
+            }
+            for (let prevCollision of this.collisions) {
+                if (collision.name == prevCollision.name) {
+                    isLegit = false;
+                    collision.ticksRemaining = 10;
+                    this.repeatedCollisions.push(collision);
+                }
+            }
+            return isLegit;
+        });
+        this.collisions = currentCollisions;
+    }
+    fixPuck() {
+        if (this.shouldFixPuck) {
+            matter_js_1.Body.applyForce(this.puck, this.puck.position, { x: this.puck.velocity.x / 500, y: this.puck.velocity.y / 500 });
+        }
+        if (this.collisions.length && this.puck.velocity.x < 0.04 && this.puck.velocity.y < 0.04) {
+            this.shouldFixPuck = true;
+        }
+        else {
+            this.shouldFixPuck = false;
+        }
     }
     sendState() {
         for (const socket of this.playerSockets) {
@@ -167,11 +217,24 @@ class Field {
         }
     }
     clampMaxVelocity(obj) {
-        if (obj.velocity.x * obj.velocity.x + obj.velocity.y * obj.velocity.y > Constants_1.default.MAX_VELOCITY_SQRD) {
-            const velocityAngle = Math.atan(obj.velocity.y / obj.velocity.x);
-            obj.velocity.x = Constants_1.default.MAX_VELOCITY * Math.cos(velocityAngle);
-            obj.velocity.y = Constants_1.default.MAX_VELOCITY * Math.sin(velocityAngle);
+        if (Math.abs(obj.velocity.x) > Constants_1.default.MAX_VELOCITY) {
+            matter_js_1.Body.setVelocity(obj, {
+                x: Math.sign(obj.velocity.x) * Constants_1.default.MAX_VELOCITY,
+                y: obj.velocity.y
+            });
         }
+        if (Math.abs(obj.velocity.y) > Constants_1.default.MAX_VELOCITY) {
+            matter_js_1.Body.setVelocity(obj, {
+                y: Math.sign(obj.velocity.y) * Constants_1.default.MAX_VELOCITY,
+                x: obj.velocity.x
+            });
+        }
+        // if (obj.positionImpulse.x > 25.0) {
+        //     obj.positionImpulse.x = 25.0;
+        // }
+        // if (obj.positionImpulse.y > 25.0) {
+        //     obj.positionImpulse.y = 25.0;
+        // }
     }
     resetSpeed(body) {
         let objs = [];

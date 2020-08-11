@@ -47,6 +47,7 @@ io.on('connection', socket => {
     });
     socket.on(Constants_1.default.SOCKET_DISCONNECT, () => {
         io.sockets.emit(Constants_1.default.SOCKET_PLAYER_LEAVE);
+        clearInterval(field.updateInterval);
         initGame();
     });
 });
