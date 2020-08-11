@@ -22,7 +22,6 @@ export const getRectangleSprite = (width: number, height: number, gameController
 }
 
 export const getCollisionPoint = (collisionData: any, colliderType: 'wall' | 'striker'): {x: number, y: number} => {
-    console.log(Constants.PUCK_REL_WIDTH)
     if(colliderType == 'striker') {
         const vectorToStriker = {x: collisionData.pos.x - collisionData.puckPos.x, y: collisionData.pos.y - collisionData.puckPos.y};
         const normalisedVector = normalizeVector(vectorToStriker);
