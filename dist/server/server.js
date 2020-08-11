@@ -38,7 +38,7 @@ io.on('connection', socket => {
             field.addPlayer(socket);
             socket.emit(Constants_1.default.SOCKET_ROLE_ASSIGN, role);
             if (playerRoles.length == 0) {
-                setTimeout(() => { io.sockets.emit(Constants_1.default.SOCKET_PLAYERS_READY); }, 100);
+                setTimeout(() => { io.sockets.emit(Constants_1.default.SOCKET_PLAYERS_READY); }, 500);
             }
         }
     });
