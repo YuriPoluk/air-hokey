@@ -3,8 +3,14 @@ import Constants from "../../shared/Constants";
 import { processGameUpdate } from "./state";
 
 const socketProtocol = (window.location.protocol.includes('https')) ? 'wss' : 'ws';
+let url: string;
+if(window.location.host == 'localhost:8080')
+    url = 'localhost:3000';
+else {
+    url = window.location.host;
+}
 
-export const socket = io(`${socketProtocol}://${window.location.host}`, { reconnection: false, forceNew: true });
+export const socket = io(`${socketProtocol}://${url}`, { reconnection: false, forceNew: true });
 
 console.log({originalSocket: socket})
 

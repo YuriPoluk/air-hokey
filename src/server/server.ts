@@ -54,6 +54,7 @@ io.on('connection', socket => {
 
   socket.on(Constants.SOCKET_DISCONNECT, () => {
     io.sockets.emit(Constants.SOCKET_PLAYER_LEAVE);
+    clearInterval(field.updateInterval)
     initGame();
   });
 })
