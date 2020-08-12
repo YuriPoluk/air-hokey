@@ -42,7 +42,7 @@ export default class MainGame extends GameScene  {
             await connect();
         })
 
-        this.retryBtn.on('pointerdown',() => {
+        this.retryBtn.once('pointerdown',() => {
             location.reload();
         })
 
@@ -98,7 +98,6 @@ export default class MainGame extends GameScene  {
 
         this.retryBtn = this.UICnt.addChild(new Sprite('retry_btn'));
         this.retryBtn.alpha = 0;
-        this.retryBtn.interactive = true;
 
         this.playBtn = this.UICnt.addChild(new Sprite('play'));
         this.playBtn.interactive = true;
@@ -195,6 +194,7 @@ export default class MainGame extends GameScene  {
     }
 
     onGameOver(winner: PlayerRoles) {
+        this.retryBtn.interactive = true;
         gsap.to(this.retryBtn, {
             alpha: 1,
             duration: 0.5

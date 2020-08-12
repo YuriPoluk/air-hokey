@@ -49,7 +49,7 @@ io.on('connection', socket => {
   });
 
   socket.on(Constants.SOCKET_PLAYER_ACTION, data => {
-    field.updatePlayerOnInput(socket.id, data)
+    field.addPlayerInput(socket.id, data)
   });
 
   socket.on(Constants.SOCKET_DISCONNECT, () => {

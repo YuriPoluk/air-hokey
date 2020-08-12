@@ -19,11 +19,16 @@ interface Walls {
     topRight: FieldElement
 }
 
+interface Point {
+    x: number,
+    y: number
+}
+
 export default class GameField extends PIXI.Container {
 
     gameController = GameController.getInstance();
     enginePrediction = new FieldPrediction()
-    playerInput!: {x: number, y: number} | undefined;
+    playerInput!: Point | undefined;
 
     background!: Sprite;
     markup!: Sprite;
@@ -143,7 +148,6 @@ export default class GameField extends PIXI.Container {
         if(this.role == PlayerRoles.Player2) {
             this.player1.position.set(state.player1.x, state.player1.y);
             this.player2.position.set(this.enginePrediction.player.body.position.x, this.enginePrediction.player.body.position.y);
-
         }
 
 

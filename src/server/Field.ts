@@ -1,5 +1,5 @@
-import {Bodies, Body, Engine, World, Constraint, Query, Events} from "matter-js";
-import { PlayerRoles } from '../shared/PlayerRoles';
+import {Bodies, Body, Constraint, Engine, Query, World} from "matter-js";
+import {PlayerRoles} from '../shared/PlayerRoles';
 import PlayerEntity from '../shared/PlayerEntity';
 import Constants from "../shared/Constants";
 import SocketIO from "socket.io";
@@ -16,7 +16,7 @@ export default class Field {
     goals: [number, number];
     playerSockets: SocketIO.Socket[] = [];
     collisions: any[] = [];
-    // prevTickCollisions: any[] = [];
+    playerCommands: any[] = [];
     repeatedCollisions: any[] = [];
     playToScore = Constants.PLAY_TO_SCORE;
     shouldFixPuck = false;
@@ -122,21 +122,9 @@ export default class Field {
         }
     }
 
-    updatePlayerOnInput(socketId: string, data: any) {
-        if(!this.shouldProcessInput) return;
-        const player = this.getPlayerById(socketId);
-        if(!player) return;
-        if(player.constraint) {
-            World.remove(this.engine.world, player.constraint);
-        }
-        player.constraint = Constraint.create({
-            pointA: {x: data.x, y: data.y},
-            bodyB: player.body,
-            pointB: { x: 0, y: 0 },
-            length: 0,
-            stiffness: 0.9,
-        });
-        World.add(this.engine.world, player.constraint);
+    addPlayerInput(socketId: string, data: any) {
+        const role = this.playerSockets[0].id == socketId ? PlayerRoles.Player1 : PlayerRoles.Player2;
+        this.playerCommands[role] = data;
     }
 
     beforeEngineupdate() {
@@ -151,6 +139,35 @@ export default class Field {
             this.player1Entity.body.position.y = Constants.CONSTRAINT_WIDTH + Constants.PUCK_WIDTH/2;
     }
 
+    tick() {
+        this.updatePlayer(PlayerRoles.Player1);
+        this.updatePlayer(PlayerRoles.Player2);
+        this.updateWorld();
+        this.getCollisions();
+        this.fixPuck();
+        this.sendState();
+    }
+
+    updatePlayer(role: PlayerRoles) {
+        if(!this.shouldProcessInput) return;
+
+        const player = role == PlayerRoles.Player1 ? this.player1Entity : this.player2Entity;
+        const data = this.playerCommands[role];
+        if(data) {
+            if(player.constraint) {
+                World.remove(this.engine.world, player.constraint);
+            }
+            player.constraint = Constraint.create({
+                pointA: {x: data.x, y: data.y},
+                bodyB: player.body,
+                pointB: { x: 0, y: 0 },
+                length: 0,
+                stiffness: 0.9,
+            });
+            World.add(this.engine.world, player.constraint);
+        }
+    }
+
     updateWorld() {
         this.beforeEngineupdate();
         Engine.update(this.engine, 1000/60);
@@ -158,12 +175,7 @@ export default class Field {
         this.checkGoal();
     }
 
-    tick() {
-        this.updateWorld();
-        this.getCollisions();
-        this.fixPuck();
-        this.sendState();
-    }
+
 
     getCollisions() {
         this.repeatedCollisions = this.repeatedCollisions.filter(x => {

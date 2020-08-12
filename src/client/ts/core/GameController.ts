@@ -3,7 +3,6 @@ import GameScene from "./GameScene";
 import {LayoutManager} from "../libs/LayoutManager";
 import {socket, connect} from '../networking';
 import { initState } from "../state";
-import StartScreen from '../scenes/StartScreen'
 import { gsap } from 'gsap';
 import MainGame from "../scenes/MainGame";
 
