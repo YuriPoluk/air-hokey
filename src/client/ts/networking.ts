@@ -28,19 +28,4 @@ export const connect = async () => {
     socket.on('disconnect', () => {
         console.log('Disconnected from server.');
     });
-    setInterval(()=>{
-        console.log(i);
-        i = 0;
-    }, 1000)
 };
-
-let i = 0;
-socket.on(Constants.SOCKET_UPDATE, ()=>{
-    i++;
-});
-
-
-
-
-
-

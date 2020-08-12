@@ -1,15 +1,15 @@
 import Sprite from "../libs/Sprite";
-import { Engine } from "matter-js";
 import GameController from "../core/GameController";
-import { PlayerRoles } from '../../../shared/PlayerRoles';
+import {PlayerRoles} from '../../../shared/PlayerRoles';
 import Constants from "../../../shared/Constants";
-import { getCurrentState, getCurrentCollisions } from "../state";
+import {getCurrentCollisions, getCurrentState} from "../state";
 import sound from 'pixi-sound';
 import FieldElement from "./FieldElement";
 import * as particles from 'pixi-particles'
 import emitterConfig from '../configs/emitter_config';
-import { getCollisionPoint } from "../../../shared/Utils";
-import { gsap } from 'gsap';
+import {getCollisionPoint} from "../../../shared/Utils";
+import {gsap} from 'gsap';
+import FieldPrediction from "./FieldPrediction";
 
 
 interface Walls {
@@ -22,7 +22,7 @@ interface Walls {
 export default class GameField extends PIXI.Container {
 
     gameController = GameController.getInstance();
-    engine = Engine.create();
+    enginePrediction = new FieldPrediction()
     playerInput!: {x: number, y: number} | undefined;
 
     background!: Sprite;
@@ -51,8 +51,6 @@ export default class GameField extends PIXI.Container {
     constructor() {
         super();
         this.pivot.set(Constants.WIDTH/2, Constants.HEIGHT/2);
-        this.engine.world.bounds = { min: { x: 0, y: 0 }, max: { x: Constants.WIDTH, y: Constants.HEIGHT }};
-        this.engine.world.gravity.y = 0;
         this.init();
     }
 
@@ -60,9 +58,8 @@ export default class GameField extends PIXI.Container {
         this.role = role;
         this.currPlayer = role === PlayerRoles.Player1 ? this.player1 : this.player2;
 
-        console.log('SET ROLE', role)
+        this.enginePrediction.setRole(this.role);
         this.showPlayersAndBounds()
-
 
         this.currPlayer.on('pointerdown', this.onPointerDown, this);
         this.on('pointermove', this.onPointerMove, this);
@@ -137,8 +134,19 @@ export default class GameField extends PIXI.Container {
     updateBodies() {
         const state = getCurrentState();
         if(!state.player1) return;
-        this.player1.position.set(state.player1.x, state.player1.y);
-        this.player2.position.set(state.player2.x, state.player2.y);
+
+        if(this.role == PlayerRoles.Player1) {
+            this.player1.position.set(this.enginePrediction.player.body.position.x, this.enginePrediction.player.body.position.y);
+            this.player2.position.set(state.player2.x, state.player2.y);
+        }
+
+        if(this.role == PlayerRoles.Player2) {
+            this.player1.position.set(state.player1.x, state.player1.y);
+            this.player2.position.set(this.enginePrediction.player.body.position.x, this.enginePrediction.player.body.position.y);
+
+        }
+
+
         this.puck.position.set(state.puck.x, state.puck.y);
 
         let collisions = getCurrentCollisions();
@@ -286,8 +294,12 @@ export default class GameField extends PIXI.Container {
     }
 
     tick(delta: number): void {
-        if(this.playerInput)
+        if(this.playerInput) {
             this.gameController.socket.emit(Constants.SOCKET_PLAYER_ACTION, this.playerInput);
+            this.enginePrediction.updatePlayerOnInput(this.playerInput);
+        }
+
+        this.enginePrediction.update(delta);
         this.updateBodies();
     }
 }

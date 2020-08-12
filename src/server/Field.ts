@@ -1,6 +1,6 @@
 import {Bodies, Body, Engine, World, Constraint, Query, Events} from "matter-js";
 import { PlayerRoles } from '../shared/PlayerRoles';
-import PlayerEntity from './PlayerEntity';
+import PlayerEntity from '../shared/PlayerEntity';
 import Constants from "../shared/Constants";
 import SocketIO from "socket.io";
 
