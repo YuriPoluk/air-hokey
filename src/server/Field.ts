@@ -248,6 +248,7 @@ export default class Field {
                 // fieldCollisions: this.fieldCollisions,
                 // strikerCollisions: this.strikerCollisions,
             });
+            console.log({startTime: startTime})
         }
     }
 
