@@ -298,12 +298,7 @@ export default class GameField extends PIXI.Container {
 
     tick(delta: number): void {
         if(this.playerInput) {
-            let sync = {
-                x: this.playerInput.x,
-                y: this.playerInput.y,
-                timeStart: Date.now()
-            }
-            this.gameController.socket.emit(Constants.SOCKET_PLAYER_ACTION, sync);
+            this.gameController.socket.emit(Constants.SOCKET_PLAYER_ACTION, this.playerInput);
             this.enginePrediction.updatePlayerOnInput(this.playerInput);
         }
 

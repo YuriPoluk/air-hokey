@@ -156,8 +156,6 @@ export default class Field {
 
 
         if(data) {
-            //@ts-ignore
-            this.data = data;
             if(player.constraint) {
                 World.remove(this.engine.world, player.constraint);
             }
@@ -230,25 +228,15 @@ export default class Field {
 
     sendState() {
         for(const socket of this.playerSockets) {
-            let startTime;
-
-            //@ts-ignore
-            if(this?.data?.timeStart) {
-                //@ts-ignore
-                startTime = this?.data?.timeStart
-            }
-
             socket.emit(Constants.SOCKET_UPDATE, {
                 t: Date.now(),
                 player1: this.player1Entity.body.position,
                 player2: this.player2Entity.body.position,
                 puck: this.puck.position,
                 collisions: this.collisions,
-                startTime: startTime
                 // fieldCollisions: this.fieldCollisions,
                 // strikerCollisions: this.strikerCollisions,
             });
-            console.log({startTime: startTime})
         }
     }
 
