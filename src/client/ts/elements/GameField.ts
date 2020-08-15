@@ -150,7 +150,6 @@ export default class GameField extends PIXI.Container {
             this.player2.position.set(this.enginePrediction.player.body.position.x, this.enginePrediction.player.body.position.y);
         }
 
-
         this.puck.position.set(state.puck.x, state.puck.y);
 
         let collisions = getCurrentCollisions();
@@ -235,10 +234,10 @@ export default class GameField extends PIXI.Container {
         this.walls[PlayerRoles.Player1].right.position.set(Constants.CONSTRAINT_WIDTH - 3, Constants.FIELD_HEIGHT*0.75 + Constants.CONSTRAINT_WIDTH);
 
         this.walls[PlayerRoles.Player1].topRight = this.addChild(new FieldElement('wall_blue_h'));
-        this.walls[PlayerRoles.Player1].topRight.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2 + 7)/this.walls[PlayerRoles.Player1].topRight.view.getLocalBounds().width);
+        this.walls[PlayerRoles.Player1].topRight.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player1].topRight.view.getLocalBounds().width);
         this.walls[PlayerRoles.Player1].topRight.position.set((Constants.CONSTRAINT_WIDTH + (Constants.WIDTH - Constants.GATE_WIDTH)/2)/2, Constants.HEIGHT - Constants.CONSTRAINT_WIDTH + 3);
         this.walls[PlayerRoles.Player1].topLeft = this.addChild(new FieldElement('wall_blue_h'));
-        this.walls[PlayerRoles.Player1].topLeft.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2 + 7)/this.walls[PlayerRoles.Player1].topLeft.view.getLocalBounds().width);
+        this.walls[PlayerRoles.Player1].topLeft.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player1].topLeft.view.getLocalBounds().width);
         this.walls[PlayerRoles.Player1].topLeft.position.set((Constants.WIDTH - Constants.CONSTRAINT_WIDTH + Constants.WIDTH/2 + Constants.GATE_WIDTH/2)/2, Constants.HEIGHT - Constants.CONSTRAINT_WIDTH + 3);
 
         this.walls[PlayerRoles.Player2].left = this.addChild(new FieldElement('wall_purple_v'));
@@ -250,10 +249,10 @@ export default class GameField extends PIXI.Container {
         this.walls[PlayerRoles.Player2].right.position.set(Constants.WIDTH - Constants.CONSTRAINT_WIDTH + 3, Constants.FIELD_HEIGHT*0.25 + Constants.CONSTRAINT_WIDTH);
 
         this.walls[PlayerRoles.Player2].topLeft = this.addChild(new FieldElement('wall_purple_h'));
-        this.walls[PlayerRoles.Player2].topLeft.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2 + 7)/this.walls[PlayerRoles.Player2].topLeft.view.getLocalBounds().width);
+        this.walls[PlayerRoles.Player2].topLeft.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player2].topLeft.view.getLocalBounds().width);
         this.walls[PlayerRoles.Player2].topLeft.position.set((Constants.CONSTRAINT_WIDTH + (Constants.WIDTH - Constants.GATE_WIDTH)/2)/2, Constants.CONSTRAINT_WIDTH - 3);
         this.walls[PlayerRoles.Player2].topRight = this.addChild(new FieldElement('wall_purple_h'));
-        this.walls[PlayerRoles.Player2].topRight.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2 + 7)/this.walls[PlayerRoles.Player2].topRight.view.getLocalBounds().width);
+        this.walls[PlayerRoles.Player2].topRight.scale.set((Constants.FIELD_WIDTH/2 - Constants.GATE_WIDTH/2)/this.walls[PlayerRoles.Player2].topRight.view.getLocalBounds().width);
         this.walls[PlayerRoles.Player2].topRight.position.set((Constants.WIDTH - Constants.CONSTRAINT_WIDTH + Constants.WIDTH/2 + Constants.GATE_WIDTH/2)/2, Constants.CONSTRAINT_WIDTH - 3);
 
         const viewMultiplier = 1.25; //multiplier for correct scale of strikers
@@ -299,7 +298,12 @@ export default class GameField extends PIXI.Container {
 
     tick(delta: number): void {
         if(this.playerInput) {
-            this.gameController.socket.emit(Constants.SOCKET_PLAYER_ACTION, this.playerInput);
+            let sync = {
+                x: this.playerInput.x,
+                y: this.playerInput.y,
+                timeStart: performance.now()
+            }
+            this.gameController.socket.emit(Constants.SOCKET_PLAYER_ACTION, sync);
             this.enginePrediction.updatePlayerOnInput(this.playerInput);
         }
 

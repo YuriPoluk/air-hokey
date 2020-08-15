@@ -28,6 +28,7 @@ export function processGameUpdate(update: any) {
         firstServerTimestamp = update.t;
         gameStart = Date.now();
     }
+    console.log('PING:', performance.now() - update.startTime)
     gameUpdates.push(update);
     if(update.collisions.length) {
         for(let collision of update.collisions) {
