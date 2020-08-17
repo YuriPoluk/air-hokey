@@ -21,6 +21,7 @@ export default class MainGame extends GameScene  {
     winnerText!: PIXI.Text;
     overlay!: Sprite;
     waitingText!: PIXI.Text;
+    disconnectText!: PIXI.Text;
     scoreText!: PIXI.Text;
     goalText!: PIXI.Text;
     retryBtn!: Sprite;
@@ -49,6 +50,7 @@ export default class MainGame extends GameScene  {
         this.gameController.socket.on(Constants.SOCKET_GOAL_EVENT, this.onGoal.bind(this));
         this.gameController.socket.on(Constants.SOCKET_PLAYERS_READY, this.startGame.bind(this));
         this.gameController.socket.on(Constants.SOCKET_GAME_OVER_EVENT, this.onGameOver.bind(this));
+        this.gameController.socket.on(Constants.SOCKET_DISCONNECT, this.onOpponentDisconnect.bind(this));
         this.gameController.socket.on(Constants.SOCKET_ROLE_ASSIGN, (role: PlayerRoles) => {
             this.role = role;
             if(this.role == PlayerRoles.Player2) {
@@ -83,6 +85,10 @@ export default class MainGame extends GameScene  {
         this.waitingText = this.UICnt.addChild(new PIXI.Text('WAITING FOR OTHER PLAYER', scoreStyle));
         this.waitingText.anchor.set(0.5);
         this.waitingText.alpha = 0;
+
+        this.disconnectText = this.UICnt.addChild(new PIXI.Text('OPPONENT DISCONNECTED', scoreStyle));
+        this.disconnectText.anchor.set(0.5);
+        this.disconnectText.alpha = 0;
 
         this.scoreText = this.UICnt.addChild(new PIXI.Text('3', scoreStyle));
         this.scoreText.anchor.set(0.5);
@@ -202,6 +208,26 @@ export default class MainGame extends GameScene  {
         this.celebrateAnimation(winner, 'win')
     }
 
+    onOpponentDisconnect() {
+        if(this.currentTimeline)
+            this.currentTimeline.progress(1);
+
+        this.waitingText.alpha = this.scoreText.alpha = this.goalText.alpha = this.winnerText.alpha = 0
+
+
+        gsap.to([this.disconnectText, this.retryBtn], {
+            alpha: 1,
+            duration: 0.5,
+            onStart: () => { this.retryBtn.interactive = true }
+        });
+
+        gsap.to(this.overlay, {
+            alpha: 0.5,
+            duration: 0.5,
+        });
+
+    }
+
     onResize(): void {
         const w = LayoutManager.gameWidth;
         const h = LayoutManager.gameHeight;
@@ -234,6 +260,10 @@ export default class MainGame extends GameScene  {
         this.waitingText.width = w*0.99;
         this.waitingText.scale.y = this.waitingText.scale.x;
         this.waitingText.y = -h*0.2;
+
+        this.disconnectText.width = w*0.95;
+        this.disconnectText.scale.y = this.disconnectText.scale.x;
+        this.disconnectText.y = -h*0.2;
 
         this.scoreText.width = w*0.2;
         this.scoreText.scale.y = this.scoreText.scale.x;

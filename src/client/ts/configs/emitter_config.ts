@@ -1,17 +1,20 @@
 export default {
 	"alpha": {
 		"start": 1,
-		"end": 0.5
+		"end": 0.65
 	},
 	"scale": {
-		"start": 0.15,
-		"end": 0.3,
+		"start": 0.25,
+		"end": 0.08,
 		"minimumScaleMultiplier": 2
 	},
-
+	"color": {
+		"start": "#ffffff",
+		"end": "#ffffff"
+	},
 	"speed": {
-		"start": 200,
-		"end": 50,
+		"start": 350,
+		"end": 100,
 		"minimumSpeedMultiplier": 1
 	},
 	"acceleration": {
@@ -30,12 +33,12 @@ export default {
 	},
 	"lifetime": {
 		"min": 0.15,
-		"max": 0.35
+		"max": 0.45
 	},
 	"blendMode": "normal",
-	"frequency": 0.001,
-	"emitterLifetime": 0.1,
-	"maxParticles": 50,
+	"frequency": 0.006,
+	"emitterLifetime": 0.2,
+	"maxParticles": 70,
 	"pos": {
 		"x": 0,
 		"y": 0
